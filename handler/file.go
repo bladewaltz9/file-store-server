@@ -62,9 +62,6 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			// save the file metadata
-			meta.AddFileMeta(fileMetas)
-
 			// save the file metadata to the database
 			if err := db.SaveFileMeta(fileMetas.FileHash, fileMetas.FileName, fileMetas.FileSize, fileMetas.FilePath); err != nil {
 				log.Printf("Failed to save file metadata: %v", err.Error())
