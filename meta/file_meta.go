@@ -7,11 +7,11 @@ import (
 
 // FileMeta: file metadata structure
 type FileMeta struct {
+	FileHash   string
 	FileName   string
 	FileSize   int64
-	UploadTime string
-	FileHash   string
 	FilePath   string
+	UploadTime string
 }
 
 var fileMetas map[string]FileMeta
