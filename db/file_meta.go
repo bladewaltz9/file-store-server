@@ -1,6 +1,10 @@
 package db
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/bladewaltz9/file-store-server/meta"
+)
 
 // SaveFileMeta: save the file metadata to the database
 func SaveFileMeta(fileHash string, fileName string, fileSize int64, filePath string) error {
@@ -8,13 +12,31 @@ func SaveFileMeta(fileHash string, fileName string, fileSize int64, filePath str
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
-		return fmt.Errorf("Failed to prepare the query: %v", err.Error())
+		return fmt.Errorf("failed to prepare the query: %v", err.Error())
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(fileHash, fileName, fileSize, filePath)
 	if err != nil {
-		return fmt.Errorf("Failed to execute the query: %v", err.Error())
+		return fmt.Errorf("failed to execute the query: %v", err.Error())
 	}
 	return nil
+}
+
+// GetFileMeta: get the file metadata from the database
+func GetFileMeta(fileHash string) (*meta.FileMeta, error) {
+	query := "SELECT file_hash, file_name, file_size, file_path, create_at FROM tbl_file WHERE file_hash = ?"
+
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare the query: %v", err.Error())
+	}
+	defer stmt.Close()
+
+	fileMeta := &meta.FileMeta{}
+	err = stmt.QueryRow(fileHash).Scan(&fileMeta.FileHash, &fileMeta.FileName, &fileMeta.FileSize, &fileMeta.FilePath, &fileMeta.UploadTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute the query: %v", err.Error())
+	}
+	return fileMeta, nil
 }

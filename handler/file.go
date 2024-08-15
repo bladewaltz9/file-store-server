@@ -1,12 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/bladewaltz9/file-store-server/db"
 	"github.com/bladewaltz9/file-store-server/meta"
@@ -23,48 +23,47 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		r.ParseMultipartForm(32 << 20) // limit the file size to 32MB
 		file, header, err := r.FormFile("file")
 		if err != nil {
-			log.Printf("Failed to get data from form: %v", err.Error())
-			http.Error(w, "Failed to get data from form", http.StatusInternalServerError)
+			log.Printf("failed to get data from form: %v", err.Error())
+			http.Error(w, "failed to get data from form", http.StatusInternalServerError)
 			return
 		}
 		defer file.Close()
 
 		fileMetas := meta.FileMeta{
-			FileName:   header.Filename,
-			FilePath:   "/tmp/" + header.Filename,
-			UploadTime: time.Now().Format("2006-01-02 15:04:05"),
+			FileName: header.Filename,
+			FilePath: "/tmp/" + header.Filename,
 		}
 
 		// save the file to the local disk
 		newFile, err := os.Create(fileMetas.FilePath)
 		if err != nil {
-			log.Printf("Failed to create file: %v", err.Error())
-			http.Error(w, "Failed to create file", http.StatusInternalServerError)
+			log.Printf("failed to create file: %v", err.Error())
+			http.Error(w, "failed to create file", http.StatusInternalServerError)
 			return
 		}
 		defer newFile.Close()
 
 		fileMetas.FileSize, err = io.Copy(newFile, file)
 		if err != nil {
-			log.Printf("Failed to save file: %v", err.Error())
-			http.Error(w, "Failed to save file", http.StatusInternalServerError)
+			log.Printf("failed to save file: %v", err.Error())
+			http.Error(w, "failed to save file", http.StatusInternalServerError)
 			return
 		}
 
 		// immediately return the response to the client
-		fmt.Fprintf(w, "Upload file successfully")
+		fmt.Fprintf(w, "upload file successfully")
 
 		// calculate the hash of the file in the background
 		go func() {
 			fileMetas.FileHash, err = utils.CalculateSHA256(fileMetas.FilePath)
 			if err != nil {
-				log.Printf("Failed to calculate hash: %v", err.Error())
+				log.Printf("failed to calculate hash: %v", err.Error())
 				return
 			}
 
 			// save the file metadata to the database
 			if err := db.SaveFileMeta(fileMetas.FileHash, fileMetas.FileName, fileMetas.FileSize, fileMetas.FilePath); err != nil {
-				log.Printf("Failed to save file metadata: %v", err.Error())
+				log.Printf("failed to save file metadata: %v", err.Error())
 			}
 		}()
 	}
@@ -72,6 +71,24 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 // FileQueryHandler: handles the query request
 func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
+	fileHash := r.FormValue("file_hash")
+	if fileHash == "" {
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	fileMeta, err := db.GetFileMeta(fileHash)
+	if err != nil {
+		log.Printf("failed to get file metadata: %v", err.Error())
+		http.Error(w, "failed to get file metadata", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(fileMeta); err != nil {
+		log.Printf("failed to encode the file metadata: %v", err.Error())
+		http.Error(w, "failed to encode the file metadata", http.StatusInternalServerError)
+	}
 }
 
 // FileDownloadHandler: handles the download request

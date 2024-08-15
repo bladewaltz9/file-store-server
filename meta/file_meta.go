@@ -1,12 +1,14 @@
 package meta
 
+import "time"
+
 // FileMeta: file metadata structure
 type FileMeta struct {
 	FileHash   string
 	FileName   string
 	FileSize   int64
 	FilePath   string
-	UploadTime string
+	UploadTime time.Time
 }
 
 // var fileMetas map[string]FileMeta
