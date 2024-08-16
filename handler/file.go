@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/bladewaltz9/file-store-server/db"
 	"github.com/bladewaltz9/file-store-server/meta"
@@ -71,6 +72,11 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 // FileQueryHandler: handles the query request
 func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
 	fileHash := r.FormValue("file_hash")
 	if fileHash == "" {
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
@@ -97,6 +103,35 @@ func FileDownloadHandler(w http.ResponseWriter, r *http.Request) {
 
 // FileUpdateHandler: handles the update request
 func FileUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// get the file hash from the request path
+	fileHash := strings.TrimPrefix(r.URL.Path, "/file/update/")
+	if fileHash == "" {
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	// decode the request body
+	var updateReq meta.UpdateFileMetaReq
+	if err := json.NewDecoder(r.Body).Decode(&updateReq); err != nil {
+		log.Printf("failed to decode the request: %v", err.Error())
+		http.Error(w, "failed to decode the request", http.StatusBadRequest)
+		return
+	}
+
+	// update the file metadata
+	if err := db.UpdateFileMeta(fileHash, updateReq); err != nil {
+		log.Printf("failed to update file metadata: %v", err.Error())
+		http.Error(w, "failed to update file metadata", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "update file metadata successfully")
 }
 
 // FileDeleteHandler: handles the delete request

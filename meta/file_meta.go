@@ -4,11 +4,17 @@ import "time"
 
 // FileMeta: file metadata structure
 type FileMeta struct {
-	FileHash   string
-	FileName   string
-	FileSize   int64
-	FilePath   string
-	UploadTime time.Time
+	FileHash   string    `json:"file_hash"`
+	FileName   string    `json:"file_name"`
+	FileSize   int64     `json:"file_size"`
+	FilePath   string    `json:"file_path"`
+	UploadTime time.Time `json:"upload_time"`
+}
+
+// UpdateFileMetaReq: update file metadata request structure
+type UpdateFileMetaReq struct {
+	FileName string `json:"file_name"`
+	Status   string `json:"status"`
 }
 
 // var fileMetas map[string]FileMeta

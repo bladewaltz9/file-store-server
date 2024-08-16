@@ -40,3 +40,21 @@ func GetFileMeta(fileHash string) (*meta.FileMeta, error) {
 	}
 	return fileMeta, nil
 }
+
+// UpdateFileMeta: update the file metadata in the database
+func UpdateFileMeta(fileHash string, updateReq meta.UpdateFileMetaReq) error {
+	query := "UPDATE tbl_file SET file_name = ?, status = ? WHERE file_hash = ?"
+
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare the query: %v", err.Error())
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(updateReq.FileName, updateReq.Status, fileHash)
+	if err != nil {
+		return fmt.Errorf("failed to execute the query: %v", err.Error())
+	}
+
+	return nil
+}
