@@ -9,6 +9,7 @@ type FileMeta struct {
 	FileSize   int64     `json:"file_size"`
 	FilePath   string    `json:"file_path"`
 	UploadTime time.Time `json:"upload_time"`
+	Status     string    `json:"status"`
 }
 
 // UpdateFileMetaReq: update file metadata request structure
