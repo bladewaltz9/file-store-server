@@ -67,6 +67,8 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 				log.Printf("failed to save file metadata: %v", err.Error())
 			}
 		}()
+	} else {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -99,6 +101,42 @@ func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
 
 // FileDownloadHandler: handles the download request
 func FileDownloadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// get the file hash from the request query
+	fileHash := r.URL.Query().Get("file_hash")
+	if fileHash == "" {
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	// get the file metadata
+	fileMeta, err := db.GetFileMeta(fileHash)
+	if err != nil {
+		log.Printf("failed to get file metadata: %v", err.Error())
+		http.Error(w, "failed to get file metadata", http.StatusInternalServerError)
+		return
+	}
+
+	// open the file
+	file, err := os.Open(fileMeta.FilePath)
+	if err != nil {
+		log.Printf("failed to open file: %v", err.Error())
+		http.Error(w, "failed to open file", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	// set the response header
+	w.Header().Set("Content-Type", "application/octect-stream")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileMeta.FileName))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", fileMeta.FileSize))
+
+	// send the file content to the client
+	http.ServeContent(w, r, fileMeta.FileName, fileMeta.UploadTime, file)
 }
 
 // FileUpdateHandler: handles the update request
