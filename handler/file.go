@@ -136,7 +136,7 @@ func FileDownloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", fileMeta.FileSize))
 
 	// send the file content to the client
-	http.ServeContent(w, r, fileMeta.FileName, fileMeta.UploadTime, file)
+	http.ServeContent(w, r, fileMeta.FileName, fileMeta.UpdateAt, file)
 }
 
 // FileUpdateHandler: handles the update request
