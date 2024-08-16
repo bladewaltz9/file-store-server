@@ -136,4 +136,39 @@ func FileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 // FileDeleteHandler: handles the delete request
 func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// get the file hash from the request path
+	fileHash := r.URL.Query().Get("file_hash")
+	if fileHash == "" {
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	// delete file from the local disk
+	fileMeta, err := db.GetFileMeta(fileHash)
+	if err != nil {
+		log.Printf("failed to get file metadata: %v", err.Error())
+		http.Error(w, "failed to get file metadata", http.StatusInternalServerError)
+		return
+	}
+
+	if err := os.Remove(fileMeta.FilePath); err != nil {
+		log.Printf("failed to delete file: %v", err.Error())
+		http.Error(w, "failed to delete file", http.StatusInternalServerError)
+		return
+	}
+
+	// delete file metadata from the database
+	if err := db.DeleteFileMeta(fileHash); err != nil {
+		log.Printf("failed to delete file metadata: %v", err.Error())
+		http.Error(w, "failed to delete file metadata", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "delete file successfully")
 }

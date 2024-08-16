@@ -58,3 +58,21 @@ func UpdateFileMeta(fileHash string, updateReq meta.UpdateFileMetaReq) error {
 
 	return nil
 }
+
+// DeleteFileMeta: delete the file metadata from the database
+func DeleteFileMeta(fileHash string) error {
+	query := "DELETE FROM tbl_file WHERE file_hash = ?"
+
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare the query: %v", err.Error())
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(fileHash)
+	if err != nil {
+		return fmt.Errorf("failed to execute the query: %v", err.Error())
+	}
+
+	return nil
+}
