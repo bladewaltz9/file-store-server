@@ -154,7 +154,7 @@ func FileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// decode the request body
-	var updateReq meta.UpdateFileMetaReq
+	var updateReq meta.UpdateFileMetaRequest
 	if err := json.NewDecoder(r.Body).Decode(&updateReq); err != nil {
 		log.Printf("failed to decode the request: %v", err.Error())
 		http.Error(w, "failed to decode the request", http.StatusBadRequest)

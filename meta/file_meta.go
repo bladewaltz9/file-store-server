@@ -13,8 +13,8 @@ type FileMeta struct {
 	Status   string    `json:"status"`
 }
 
-// UpdateFileMetaReq: update file metadata request structure
-type UpdateFileMetaReq struct {
+// UpdateFileMetaRequest: update file metadata request structure
+type UpdateFileMetaRequest struct {
 	FileName string `json:"file_name"`
 	Status   string `json:"status"`
 }

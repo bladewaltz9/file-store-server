@@ -42,7 +42,7 @@ func GetFileMeta(fileHash string) (*meta.FileMeta, error) {
 }
 
 // UpdateFileMeta: update the file metadata in the database
-func UpdateFileMeta(fileHash string, updateReq meta.UpdateFileMetaReq) error {
+func UpdateFileMeta(fileHash string, updateReq meta.UpdateFileMetaRequest) error {
 	query := "UPDATE tbl_file SET file_name = ?, status = ? WHERE file_hash = ?"
 
 	stmt, err := db.Prepare(query)
