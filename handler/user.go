@@ -18,6 +18,12 @@ func UserRegisterHandler(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 		email := r.FormValue("email")
 
+		// check if the user exists
+		if _, err := db.GetUserInfo(username); err == nil {
+			http.Error(w, "user already exists", http.StatusBadRequest)
+			return
+		}
+
 		// encode the password
 		encodedPwd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
