@@ -17,8 +17,8 @@ CREATE TABLE `tbl_file` (
 -- 创建用户表
 CREATE TABLE `tbl_user` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_name` VARCHAR(64) NOT NULL UNIQUE COMMENT '用户名',
-  `user_pwd` VARCHAR(60) NOT NULL DEFAULT '' COMMENT '用户encoded密码',
+  `username` VARCHAR(64) NOT NULL UNIQUE COMMENT '用户名',
+  `password` VARCHAR(60) NOT NULL DEFAULT '' COMMENT '用户encoded密码',
   `email` VARCHAR(64) DEFAULT '' COMMENT '邮箱',
   `phone` VARCHAR(20) DEFAULT '' COMMENT '手机号',
   `email_validated` TINYINT(1) DEFAULT 0 COMMENT '邮箱是否已验证',
@@ -27,7 +27,7 @@ CREATE TABLE `tbl_user` (
   `last_active` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后活跃时间戳',
   `profile` JSON COMMENT '用户属性', -- 使用 JSON 数据类型
   `status` ENUM('active', 'disabled', 'locked', 'deleted') NOT NULL DEFAULT 'active' COMMENT '账户状态',
-  UNIQUE KEY `idx_username` (`user_name`),
+  UNIQUE KEY `idx_username` (`username`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
