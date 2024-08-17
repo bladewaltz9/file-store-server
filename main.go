@@ -16,7 +16,7 @@ func main() {
 
 	// user handler
 	http.HandleFunc("/user/register", handler.UserRegisterHandler)
-	// http.HandleFunc("/user/login", handler.UserLoginHandler)
+	http.HandleFunc("/user/login", handler.UserLoginHandler)
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {

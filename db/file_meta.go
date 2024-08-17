@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/bladewaltz9/file-store-server/meta"
+	"github.com/bladewaltz9/file-store-server/models"
 )
 
 // SaveFileMeta: save the file metadata to the database
@@ -24,7 +24,7 @@ func SaveFileMeta(fileHash string, fileName string, fileSize int64, filePath str
 }
 
 // GetFileMeta: get the file metadata from the database
-func GetFileMeta(fileHash string) (*meta.FileMeta, error) {
+func GetFileMeta(fileHash string) (*models.FileMeta, error) {
 	query := "SELECT file_hash, file_name, file_size, file_path, create_at, update_at, status FROM tbl_file WHERE file_hash = ?"
 
 	stmt, err := db.Prepare(query)
@@ -33,7 +33,7 @@ func GetFileMeta(fileHash string) (*meta.FileMeta, error) {
 	}
 	defer stmt.Close()
 
-	fileMeta := &meta.FileMeta{}
+	fileMeta := &models.FileMeta{}
 	err = stmt.QueryRow(fileHash).Scan(&fileMeta.FileHash, &fileMeta.FileName, &fileMeta.FileSize, &fileMeta.FilePath, &fileMeta.CreateAt, &fileMeta.UpdateAt, &fileMeta.Status)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute the query: %v", err.Error())
@@ -42,7 +42,7 @@ func GetFileMeta(fileHash string) (*meta.FileMeta, error) {
 }
 
 // UpdateFileMeta: update the file metadata in the database
-func UpdateFileMeta(fileHash string, updateReq meta.UpdateFileMetaRequest) error {
+func UpdateFileMeta(fileHash string, updateReq models.UpdateFileMetaRequest) error {
 	query := "UPDATE tbl_file SET file_name = ?, status = ? WHERE file_hash = ?"
 
 	stmt, err := db.Prepare(query)

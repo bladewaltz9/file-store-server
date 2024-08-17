@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/bladewaltz9/file-store-server/db"
-	"github.com/bladewaltz9/file-store-server/meta"
+	"github.com/bladewaltz9/file-store-server/models"
 	"github.com/bladewaltz9/file-store-server/utils"
 )
 
@@ -30,7 +30,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		defer file.Close()
 
-		fileMetas := meta.FileMeta{
+		fileMetas := models.FileMeta{
 			FileName: header.Filename,
 			FilePath: "/tmp/" + header.Filename,
 		}
@@ -154,7 +154,7 @@ func FileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// decode the request body
-	var updateReq meta.UpdateFileMetaRequest
+	var updateReq models.UpdateFileMetaRequest
 	if err := json.NewDecoder(r.Body).Decode(&updateReq); err != nil {
 		log.Printf("failed to decode the request: %v", err.Error())
 		http.Error(w, "failed to decode the request", http.StatusBadRequest)

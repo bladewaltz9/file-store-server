@@ -40,32 +40,33 @@ func UserRegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// func UserLoginHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method == http.MethodGet {
-// 		http.ServeFile(w, r, "static/view/user_login.html")
-// 	} else if r.Method == http.MethodPost {
-// 		// // parse the form
-// 		// username := r.FormValue("username")
-// 		// password := r.FormValue("password")
+// UserLoginHandler: handles the user login request
+func UserLoginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		http.ServeFile(w, r, "static/view/user_login.html")
+	} else if r.Method == http.MethodPost {
+		// parse the form
+		username := r.FormValue("username")
+		password := r.FormValue("password")
 
-// 		// // get the user information from the database
-// 		// user, err := db.GetUserInfo(username)
-// 		// if err != nil {
-// 		// 	log.Printf("failed to get user: %v", err.Error())
-// 		// 	http.Error(w, "failed to get user", http.StatusInternalServerError)
-// 		// 	return
-// 		// }
+		// get the user information from the database
+		userInfo, err := db.GetUserInfo(username)
+		if err != nil {
+			log.Printf("failed to get user: %v", err.Error())
+			http.Error(w, "failed to get user", http.StatusInternalServerError)
+			return
+		}
 
-// 		// // compare the password
-// 		// if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-// 		// 	log.Printf("invalid password: %v", err.Error())
-// 		// 	http.Error(w, "invalid password", http.StatusUnauthorized)
-// 		// 	return
-// 		// }
+		// compare the password
+		if err := bcrypt.CompareHashAndPassword([]byte(userInfo.Password), []byte(password)); err != nil {
+			log.Printf("invalid password: %v", err.Error())
+			http.Error(w, "invalid password", http.StatusUnauthorized)
+			return
+		}
 
-// 		// w.WriteHeader(http.StatusOK)
-// 		// w.Write([]byte("login successfully"))
-// 	} else {
-// 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
-// 	}
-// }
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("login successfully"))
+	} else {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+	}
+}
