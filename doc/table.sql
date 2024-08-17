@@ -18,7 +18,7 @@ CREATE TABLE `tbl_file` (
 CREATE TABLE `tbl_user` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_name` VARCHAR(64) NOT NULL UNIQUE COMMENT '用户名',
-  `user_pwd` VARCHAR(256) NOT NULL DEFAULT '' COMMENT '用户encoded密码',
+  `user_pwd` VARCHAR(60) NOT NULL DEFAULT '' COMMENT '用户encoded密码',
   `email` VARCHAR(64) DEFAULT '' COMMENT '邮箱',
   `phone` VARCHAR(20) DEFAULT '' COMMENT '手机号',
   `email_validated` TINYINT(1) DEFAULT 0 COMMENT '邮箱是否已验证',
