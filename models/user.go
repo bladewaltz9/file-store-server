@@ -7,3 +7,5 @@ type UserInfo struct {
 	Email    string `json:"email"`
 	// TODO: add more fields
 }
+
+type ContextKey string // ContextKey: context key type

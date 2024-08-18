@@ -3,8 +3,10 @@ package handler
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/bladewaltz9/file-store-server/db"
+	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -69,6 +71,26 @@ func UserLoginHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid password", http.StatusUnauthorized)
 			return
 		}
+
+		// generate jwt token
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"username": username,
+			"exp":      time.Now().Add(time.Hour * 1).Unix(), // set expiration time
+		})
+
+		tokenStr, err := token.SignedString([]byte("file-store-server"))
+		if err != nil {
+			log.Printf("failed to generate token: %v", err.Error())
+			http.Error(w, "failed to generate token", http.StatusInternalServerError)
+			return
+		}
+
+		// set the token in the cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    tokenStr,
+			HttpOnly: true, // prevent the client from accessing the cookie
+		})
 
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("login successfully"))
