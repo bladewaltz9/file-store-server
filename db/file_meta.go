@@ -24,8 +24,8 @@ func SaveFileMeta(fileHash string, fileName string, fileSize int64, filePath str
 }
 
 // GetFileMeta: get the file metadata from the database
-func GetFileMeta(fileHash string) (*models.FileMeta, error) {
-	query := "SELECT file_hash, file_name, file_size, file_path, create_at, update_at, status FROM tbl_file WHERE file_hash = ?"
+func GetFileMeta(fileID string) (*models.FileMeta, error) {
+	query := "SELECT file_hash, file_name, file_size, file_path, create_at, update_at, status FROM tbl_file WHERE id = ?"
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -34,7 +34,7 @@ func GetFileMeta(fileHash string) (*models.FileMeta, error) {
 	defer stmt.Close()
 
 	fileMeta := &models.FileMeta{}
-	err = stmt.QueryRow(fileHash).Scan(&fileMeta.FileHash, &fileMeta.FileName, &fileMeta.FileSize, &fileMeta.FilePath, &fileMeta.CreateAt, &fileMeta.UpdateAt, &fileMeta.Status)
+	err = stmt.QueryRow(fileID).Scan(&fileMeta.FileHash, &fileMeta.FileName, &fileMeta.FileSize, &fileMeta.FilePath, &fileMeta.CreateAt, &fileMeta.UpdateAt, &fileMeta.Status)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute the query: %v", err.Error())
 	}
@@ -42,8 +42,8 @@ func GetFileMeta(fileHash string) (*models.FileMeta, error) {
 }
 
 // UpdateFileMeta: update the file metadata in the database
-func UpdateFileMeta(fileHash string, updateReq models.UpdateFileMetaRequest) error {
-	query := "UPDATE tbl_file SET file_name = ?, status = ? WHERE file_hash = ?"
+func UpdateFileMeta(fileID string, updateReq models.UpdateFileMetaRequest) error {
+	query := "UPDATE tbl_file SET file_name = ?, status = ? WHERE id = ?"
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -51,7 +51,7 @@ func UpdateFileMeta(fileHash string, updateReq models.UpdateFileMetaRequest) err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(updateReq.FileName, updateReq.Status, fileHash)
+	_, err = stmt.Exec(updateReq.FileName, updateReq.Status, fileID)
 	if err != nil {
 		return fmt.Errorf("failed to execute the query: %v", err.Error())
 	}
@@ -60,8 +60,8 @@ func UpdateFileMeta(fileHash string, updateReq models.UpdateFileMetaRequest) err
 }
 
 // DeleteFileMeta: delete the file metadata from the database
-func DeleteFileMeta(fileHash string) error {
-	query := "DELETE FROM tbl_file WHERE file_hash = ?"
+func DeleteFileMeta(fileID string) error {
+	query := "DELETE FROM tbl_file WHERE id = ?"
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -69,7 +69,7 @@ func DeleteFileMeta(fileHash string) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(fileHash)
+	_, err = stmt.Exec(fileID)
 	if err != nil {
 		return fmt.Errorf("failed to execute the query: %v", err.Error())
 	}

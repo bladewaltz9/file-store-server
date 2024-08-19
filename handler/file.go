@@ -79,13 +79,13 @@ func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileHash := r.FormValue("file_hash")
-	if fileHash == "" {
+	fileID := r.FormValue("file_id")
+	if fileID == "" {
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
 		return
 	}
 
-	fileMeta, err := db.GetFileMeta(fileHash)
+	fileMeta, err := db.GetFileMeta(fileID)
 	if err != nil {
 		log.Printf("failed to get file metadata: %v", err.Error())
 		http.Error(w, "failed to get file metadata", http.StatusInternalServerError)
@@ -106,15 +106,14 @@ func FileDownloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get the file hash from the request query
-	fileHash := r.URL.Query().Get("file_hash")
-	if fileHash == "" {
+	fileID := strings.TrimPrefix(r.URL.Path, "/file/download/")
+	if fileID == "" {
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
 		return
 	}
 
 	// get the file metadata
-	fileMeta, err := db.GetFileMeta(fileHash)
+	fileMeta, err := db.GetFileMeta(fileID)
 	if err != nil {
 		log.Printf("failed to get file metadata: %v", err.Error())
 		http.Error(w, "failed to get file metadata", http.StatusInternalServerError)
@@ -147,8 +146,8 @@ func FileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the file hash from the request path
-	fileHash := strings.TrimPrefix(r.URL.Path, "/file/update/")
-	if fileHash == "" {
+	fileID := strings.TrimPrefix(r.URL.Path, "/file/update/")
+	if fileID == "" {
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
 		return
 	}
@@ -162,7 +161,7 @@ func FileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// update the file metadata
-	if err := db.UpdateFileMeta(fileHash, updateReq); err != nil {
+	if err := db.UpdateFileMeta(fileID, updateReq); err != nil {
 		log.Printf("failed to update file metadata: %v", err.Error())
 		http.Error(w, "failed to update file metadata", http.StatusInternalServerError)
 		return
@@ -180,14 +179,14 @@ func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the file hash from the request path
-	fileHash := r.URL.Query().Get("file_hash")
-	if fileHash == "" {
+	fileID := r.URL.Query().Get("file_id")
+	if fileID == "" {
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
 		return
 	}
 
 	// delete file from the local disk
-	fileMeta, err := db.GetFileMeta(fileHash)
+	fileMeta, err := db.GetFileMeta(fileID)
 	if err != nil {
 		log.Printf("failed to get file metadata: %v", err.Error())
 		http.Error(w, "failed to get file metadata", http.StatusInternalServerError)
@@ -201,7 +200,7 @@ func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// delete file metadata from the database
-	if err := db.DeleteFileMeta(fileHash); err != nil {
+	if err := db.DeleteFileMeta(fileID); err != nil {
 		log.Printf("failed to delete file metadata: %v", err.Error())
 		http.Error(w, "failed to delete file metadata", http.StatusInternalServerError)
 		return
