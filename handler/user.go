@@ -23,7 +23,7 @@ func UserRegisterHandler(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 
 		// check if the user exists
-		if _, err := db.GetUserInfo(username); err == nil {
+		if _, err := db.GetUserInfoByUsername(username); err == nil {
 			http.Error(w, "user already exists", http.StatusBadRequest)
 			return
 		}
@@ -43,8 +43,7 @@ func UserRegisterHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("register successfully"))
+		http.Redirect(w, r, "/user/login", http.StatusFound)
 	} else {
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 	}
@@ -60,7 +59,7 @@ func UserLoginHandler(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 
 		// get the user information from the database
-		userInfo, err := db.GetUserInfo(username)
+		userInfo, err := db.GetUserInfoByUsername(username)
 		if err != nil {
 			log.Printf("failed to get user: %v", err.Error())
 			http.Error(w, "failed to get user", http.StatusInternalServerError)
@@ -76,6 +75,7 @@ func UserLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 		// generate jwt token
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"user_id":  userInfo.UserID,
 			"username": username,
 			"exp":      time.Now().Add(time.Hour * 1).Unix(), // set expiration time
 		})
@@ -105,16 +105,18 @@ func UserLoginHandler(w http.ResponseWriter, r *http.Request) {
 func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	// get the claims from the context
 	claims := r.Context().Value(models.ContextKey("claims")).(jwt.MapClaims)
+	user_id := int(claims["user_id"].(float64))
 	username := claims["username"].(string)
 
 	// get the user files from the database
-	userFiles, err := db.GetUserFiles(username)
+	userFiles, err := db.GetUserFiles(user_id)
 	if err != nil {
 		log.Printf("failed to get user files: %v", err.Error())
 		http.Error(w, "failed to get user files", http.StatusInternalServerError)
 		return
 	}
 	data := models.DashboardData{
+		UserID:   user_id,
 		Username: username,
 		Files:    userFiles,
 	}

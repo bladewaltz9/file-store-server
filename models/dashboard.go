@@ -11,7 +11,7 @@ type FileInfo struct {
 
 // DashboardData: dashboard data structure
 type DashboardData struct {
+	UserID   int        `json:"user_id"`
 	Username string     `json:"username"`
-	Email    string     `json:"email"`
 	Files    []FileInfo `json:"files"`
 }

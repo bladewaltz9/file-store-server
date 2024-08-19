@@ -24,8 +24,8 @@ func SaveUserInfo(username string, password string, email string) error {
 }
 
 // GetUserInfo: get the user information from the database
-func GetUserInfo(username string) (*models.UserInfo, error) {
-	query := "SELECT username, password, email FROM tbl_user WHERE username = ?"
+func GetUserInfoByUsername(username string) (*models.UserInfo, error) {
+	query := "SELECT id, username, password, email FROM tbl_user WHERE username = ?"
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -34,7 +34,7 @@ func GetUserInfo(username string) (*models.UserInfo, error) {
 	defer stmt.Close()
 
 	user := &models.UserInfo{}
-	err = stmt.QueryRow(username).Scan(&user.Username, &user.Password, &user.Email)
+	err = stmt.QueryRow(username).Scan(&user.UserID, &user.Username, &user.Password, &user.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute the query: %v", err.Error())
 	}
@@ -42,14 +42,13 @@ func GetUserInfo(username string) (*models.UserInfo, error) {
 }
 
 // GetUserFiles: get the user files from the database
-func GetUserFiles(username string) ([]models.FileInfo, error) {
+func GetUserFiles(user_id int) ([]models.FileInfo, error) {
 	query := `SELECT f.id, f.file_name, f.file_size, DATE_FORMAT(uf.upload_at, '%Y-%m-%d %H:%i'), uf.status 
-	FROM tbl_user u 
-	JOIN tbl_user_file uf ON u.id = uf.user_id 
+	FROM tbl_user_file uf
 	JOIN tbl_file f ON uf.file_id = f.id 
-	WHERE u.username = ?;`
+	WHERE uf.user_id = ?;`
 
-	rows, err := db.Query(query, username)
+	rows, err := db.Query(query, user_id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute the query: %v", err.Error())
 	}

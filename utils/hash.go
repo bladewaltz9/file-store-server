@@ -10,12 +10,8 @@ import (
 )
 
 // CalculateSHA1: calculate the SHA1 hash of the file
-func CalculateSHA1(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
+func CalculateSHA1(file *os.File) (string, error) {
+	file.Seek(0, 0)
 
 	hash := sha1.New()
 	if _, err := io.Copy(hash, file); err != nil {
@@ -26,12 +22,8 @@ func CalculateSHA1(filePath string) (string, error) {
 }
 
 // CalculateSHA256: calculate the SHA256 hash of the file
-func CalculateSHA256(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
+func CalculateSHA256(file *os.File) (string, error) {
+	file.Seek(0, 0)
 
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
@@ -42,12 +34,8 @@ func CalculateSHA256(filePath string) (string, error) {
 }
 
 // CalulateMD5: calculate the MD5 hash of the file
-func CalulateMD5(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
+func CalulateMD5(file *os.File) (string, error) {
+	file.Seek(0, 0)
 
 	hash := md5.New()
 	if _, err := io.Copy(hash, file); err != nil {

@@ -9,11 +9,11 @@ import (
 
 func main() {
 	// file handler
-	http.HandleFunc("/file/upload", handler.FileUploadHandler)
-	http.HandleFunc("/file/query", handler.FileQueryHandler)
-	http.HandleFunc("/file/download/", handler.FileDownloadHandler)
-	http.HandleFunc("/file/update/", handler.FileUpdateHandler)
-	http.HandleFunc("/file/delete", handler.FileDeleteHandler)
+	http.HandleFunc("/file/upload", middleware.TokenAuthMiddleware(handler.FileUploadHandler))
+	http.HandleFunc("/file/query", middleware.TokenAuthMiddleware(handler.FileQueryHandler))
+	http.HandleFunc("/file/download/", middleware.TokenAuthMiddleware(handler.FileDownloadHandler))
+	http.HandleFunc("/file/update/", middleware.TokenAuthMiddleware(handler.FileUpdateHandler))
+	http.HandleFunc("/file/delete", middleware.TokenAuthMiddleware(handler.FileDeleteHandler))
 
 	// user handler
 	http.HandleFunc("/user/register", handler.UserRegisterHandler)

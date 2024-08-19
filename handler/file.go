@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bladewaltz9/file-store-server/db"
 	"github.com/bladewaltz9/file-store-server/models"
@@ -17,60 +18,103 @@ import (
 
 // FileUploadHandler: handles the upload request
 func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		// return the upload page
-		http.ServeFile(w, r, "static/view/file_upload.html")
-	} else if r.Method == http.MethodPost {
-		// handle the upload file
-		r.ParseMultipartForm(32 << 20) // limit the file size to 32MB
-		file, header, err := r.FormFile("file")
-		if err != nil {
-			log.Printf("failed to get data from form: %v", err.Error())
-			http.Error(w, "failed to get data from form", http.StatusInternalServerError)
-			return
-		}
-		defer file.Close()
-
-		fileMetas := models.FileMeta{
-			FileName: header.Filename,
-			FilePath: "/tmp/" + header.Filename,
-		}
-
-		// save the file to the local disk
-		newFile, err := os.Create(fileMetas.FilePath)
-		if err != nil {
-			log.Printf("failed to create file: %v", err.Error())
-			http.Error(w, "failed to create file", http.StatusInternalServerError)
-			return
-		}
-		defer newFile.Close()
-
-		fileMetas.FileSize, err = io.Copy(newFile, file)
-		if err != nil {
-			log.Printf("failed to save file: %v", err.Error())
-			http.Error(w, "failed to save file", http.StatusInternalServerError)
-			return
-		}
-
-		// immediately return the response to the client
-		fmt.Fprintf(w, "upload file successfully")
-
-		// calculate the hash of the file in the background
-		go func() {
-			fileMetas.FileHash, err = utils.CalculateSHA256(fileMetas.FilePath)
-			if err != nil {
-				log.Printf("failed to calculate hash: %v", err.Error())
-				return
-			}
-
-			// save the file metadata to the database
-			if err := db.SaveFileMeta(fileMetas.FileHash, fileMetas.FileName, fileMetas.FileSize, fileMetas.FilePath); err != nil {
-				log.Printf("failed to save file metadata: %v", err.Error())
-			}
-		}()
-	} else {
+	if r.Method != http.MethodPost {
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		return
 	}
+
+	// handle the upload file
+	r.ParseMultipartForm(32 << 20) // limit the file size to 32MB
+
+	user_id, err := strconv.Atoi(r.FormValue("user_id"))
+	if err != nil {
+		log.Printf("failed to convert user_id to int: %v", err.Error())
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		log.Printf("failed to get data from form: %v", err.Error())
+		http.Error(w, "failed to get data from form", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	fileMetas := models.FileMeta{}
+	fileMetas.FileName = header.Filename
+	fileMetas.FilePath = "/tmp/" + time.Now().Format("20060102150405") + "_" + header.Filename
+
+	// save the file to the local disk
+	newFile, err := os.Create(fileMetas.FilePath)
+	if err != nil {
+		log.Printf("failed to create file: %v", err.Error())
+		http.Error(w, "failed to create file", http.StatusInternalServerError)
+		return
+	}
+	defer newFile.Close()
+
+	fileMetas.FileSize, err = io.Copy(newFile, file)
+	if err != nil {
+		log.Printf("failed to save file: %v", err.Error())
+		http.Error(w, "failed to save file", http.StatusInternalServerError)
+		return
+	}
+
+	// calculate the hash of the file
+	fileMetas.FileHash, err = utils.CalculateSHA256(newFile)
+	if err != nil {
+		log.Printf("failed to calculate hash: %v", err.Error())
+		http.Error(w, "failed to calculate hash", http.StatusInternalServerError)
+		return
+	}
+
+	var fileID int
+
+	// check if the file exists in the file table
+	exist, fileID, err := db.FileExists(fileMetas.FileHash)
+	if err != nil {
+		log.Printf("failed to check if the file exists: %v", err.Error())
+		http.Error(w, "failed to check if the file exists", http.StatusInternalServerError)
+		return
+	}
+	if !exist {
+		// save the file metadata to the database
+		fileID, err = db.SaveFileMeta(fileMetas.FileHash, fileMetas.FileName, fileMetas.FileSize, fileMetas.FilePath)
+		if err != nil {
+			log.Printf("failed to save file metadata: %v", err.Error())
+			http.Error(w, "failed to save file metadata", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		if err := os.Remove(fileMetas.FilePath); err != nil {
+			log.Printf("failed to delete file: %v", err.Error())
+			http.Error(w, "failed to delete file", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// check if the file exists in the user file table
+	exist, err = db.UserFileExists(user_id, fileID)
+	if err != nil {
+		log.Printf("failed to check if the file exists: %v", err.Error())
+		http.Error(w, "failed to check if the file exists", http.StatusInternalServerError)
+		return
+	}
+	if !exist {
+		// save the user file relationship to the database
+		if err := db.SaveUserFile(user_id, fileID); err != nil {
+			log.Printf("failed to save user file: %v", err.Error())
+			http.Error(w, "failed to save user file", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		http.Error(w, "file already exists", http.StatusBadRequest)
+		return
+	}
+
+	// immediately return the response to the client
+	fmt.Fprintf(w, "upload file successfully")
+
 }
 
 // FileQueryHandler: handles the query request
