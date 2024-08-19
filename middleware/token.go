@@ -3,16 +3,27 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/bladewaltz9/file-store-server/models"
 	"github.com/dgrijalva/jwt-go"
 )
 
 // TokenAuthMiddleware: middleware to authenticate the token
-func TokenAuthMiddleware(next http.Handler) http.Handler {
+func TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get the token from the header
 		tokenStr := r.Header.Get("Authorization")
+		tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
+
+		// get the token from the cookie if the header is missing
+		if tokenStr == "" {
+			tokenCookie, err := r.Cookie("token")
+			if err == nil {
+				tokenStr = tokenCookie.Value
+			}
+		}
+
 		if tokenStr == "" {
 			http.Error(w, "Authorization header missing", http.StatusUnauthorized)
 			return

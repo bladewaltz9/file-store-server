@@ -3,9 +3,11 @@ package handler
 import (
 	"log"
 	"net/http"
+	"text/template"
 	"time"
 
 	"github.com/bladewaltz9/file-store-server/db"
+	"github.com/bladewaltz9/file-store-server/models"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -90,11 +92,44 @@ func UserLoginHandler(w http.ResponseWriter, r *http.Request) {
 			Name:     "token",
 			Value:    tokenStr,
 			HttpOnly: true, // prevent the client from accessing the cookie
+			Path:     "/",
 		})
 
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("login successfully"))
+		http.Redirect(w, r, "/dashboard", http.StatusFound)
 	} else {
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 	}
+}
+
+// DashboardHandler: handles the dashboard request
+func DashboardHandler(w http.ResponseWriter, r *http.Request) {
+	// get the claims from the context
+	claims := r.Context().Value(models.ContextKey("claims")).(jwt.MapClaims)
+	username := claims["username"].(string)
+
+	// get the user files from the database
+	userFiles, err := db.GetUserFiles(username)
+	if err != nil {
+		log.Printf("failed to get user files: %v", err.Error())
+		http.Error(w, "failed to get user files", http.StatusInternalServerError)
+		return
+	}
+	data := models.DashboardData{
+		Username: username,
+		Files:    userFiles,
+	}
+
+	tmp, err := template.ParseFiles("static/view/dashboard.html")
+	if err != nil {
+		log.Printf("failed to parse the template: %v", err.Error())
+		http.Error(w, "failed to parse the template", http.StatusInternalServerError)
+		return
+	}
+
+	if err = tmp.Execute(w, data); err != nil {
+		log.Printf("failed to execute the template: %v", err.Error())
+		http.Error(w, "failed to execute the template", http.StatusInternalServerError)
+		return
+	}
+
 }

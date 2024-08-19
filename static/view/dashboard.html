@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 800px;
+            background-color: #fff;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .user-info {
+            margin-bottom: 20px;
+        }
+
+        .user-info p {
+            margin: 0;
+            padding: 5px 0;
+        }
+
+        .highlight {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .file-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .file-list th,
+        .file-list td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .file-list th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .file-list tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .file-list tr:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Welcome, <span class="highlight">{{.Username}}</span></h1>
+
+        <h2>Your Uploaded Files</h2>
+        <table class="file-list">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Size</th>
+                    <th>Upload Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Files}}
+                <tr>
+                    <td>{{.FileName}}</td>
+                    <td>{{.FileSize}}</td>
+                    <td>{{.UploadTime}}</td>
+                    <td><a href="/download/{{.FileID}}">Download</a></td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="4">No files uploaded yet.</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

@@ -1,4 +1,4 @@
--- 创建文件表
+
 CREATE TABLE `tbl_file` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `file_hash` CHAR(64) NOT NULL DEFAULT '' COMMENT '文件hash', -- SHA-256
@@ -14,7 +14,6 @@ CREATE TABLE `tbl_file` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 创建用户表
 CREATE TABLE `tbl_user` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(64) NOT NULL UNIQUE COMMENT '用户名',
@@ -31,26 +30,13 @@ CREATE TABLE `tbl_user` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 创建用户token表
-CREATE TABLE `tbl_user_token` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL, -- 使用 user_id 替代 user_name
-  `user_token` CHAR(64) NOT NULL DEFAULT '' COMMENT '用户登录token', -- SHA-256
-  UNIQUE KEY `idx_user_token` (`user_id`),
-  FOREIGN KEY (`user_id`) REFERENCES `tbl_user`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 创建用户文件表
 CREATE TABLE `tbl_user_file` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL, -- 使用 user_id 替代 user_name
-  `file_hash` CHAR(64) NOT NULL DEFAULT '' COMMENT '文件hash', -- SHA-256
-  `file_size` BIGINT DEFAULT 0 COMMENT '文件大小',
-  `file_name` VARCHAR(256) NOT NULL DEFAULT '' COMMENT '文件名',
+  `user_id` INT NOT NULL COMMENT '用户ID',
+  `file_id` INT NOT NULL COMMENT '文件ID',
   `upload_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
-  `last_update` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后修改时间',
-  `status` ENUM('normal', 'deleted', 'disabled') NOT NULL DEFAULT 'normal' COMMENT '文件状态',
-  UNIQUE KEY `idx_user_file` (`user_id`, `file_hash`),
-  KEY `idx_status` (`status`),
-  FOREIGN KEY (`user_id`) REFERENCES `tbl_user`(`id`) ON DELETE CASCADE
+  `status` ENUM('active', 'disabled', 'deleted') NOT NULL DEFAULT 'active' COMMENT '文件状态',
+  FOREIGN KEY (`user_id`) REFERENCES `tbl_user`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`file_id`) REFERENCES `tbl_file`(`id`) ON DELETE CASCADE,
+  UNIQUE KEY `idx_user_file` (`user_id`, `file_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

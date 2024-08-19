@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/bladewaltz9/file-store-server/handler"
+	"github.com/bladewaltz9/file-store-server/middleware"
 )
 
 func main() {
@@ -17,6 +18,8 @@ func main() {
 	// user handler
 	http.HandleFunc("/user/register", handler.UserRegisterHandler)
 	http.HandleFunc("/user/login", handler.UserLoginHandler)
+
+	http.HandleFunc("/dashboard", middleware.TokenAuthMiddleware(handler.DashboardHandler))
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
