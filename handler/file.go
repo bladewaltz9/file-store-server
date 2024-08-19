@@ -19,7 +19,7 @@ import (
 // FileUploadHandler: handles the upload request
 func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, "error", "invalid method")
 		return
 	}
 
@@ -29,7 +29,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(r.FormValue("user_id"))
 	if err != nil {
 		log.Printf("failed to convert user_id to int: %v", err.Error())
-		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "invalid parameter")
 		return
 	}
 	file, header, err := r.FormFile("file")
@@ -48,7 +48,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	newFile, err := os.Create(fileMetas.FilePath)
 	if err != nil {
 		log.Printf("failed to create file: %v", err.Error())
-		http.Error(w, "failed to create file", http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to create file")
 		return
 	}
 	defer newFile.Close()
@@ -56,7 +56,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	fileMetas.FileSize, err = io.Copy(newFile, file)
 	if err != nil {
 		log.Printf("failed to save file: %v", err.Error())
-		http.Error(w, "failed to save file", http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to save file")
 		return
 	}
 
@@ -64,7 +64,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	fileMetas.FileHash, err = utils.CalculateSHA256(newFile)
 	if err != nil {
 		log.Printf("failed to calculate hash: %v", err.Error())
-		http.Error(w, "failed to calculate hash", http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to calculate hash")
 		return
 	}
 
@@ -74,7 +74,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	exist, fileID, err := db.FileExists(fileMetas.FileHash)
 	if err != nil {
 		log.Printf("failed to check if the file exists: %v", err.Error())
-		http.Error(w, "failed to check if the file exists", http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to check if the file exists")
 		return
 	}
 	if !exist {
@@ -82,13 +82,13 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		fileID, err = db.SaveFileMeta(fileMetas.FileHash, fileMetas.FileName, fileMetas.FileSize, fileMetas.FilePath)
 		if err != nil {
 			log.Printf("failed to save file metadata: %v", err.Error())
-			http.Error(w, "failed to save file metadata", http.StatusInternalServerError)
+			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to save file metadata")
 			return
 		}
 	} else {
 		if err := os.Remove(fileMetas.FilePath); err != nil {
 			log.Printf("failed to delete file: %v", err.Error())
-			http.Error(w, "failed to delete file", http.StatusInternalServerError)
+			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to delete file")
 			return
 		}
 	}
@@ -97,24 +97,22 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	exist, err = db.UserFileExists(userID, fileID)
 	if err != nil {
 		log.Printf("failed to check if the file exists: %v", err.Error())
-		http.Error(w, "failed to check if the file exists", http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to check if the file exists")
 		return
 	}
 	if !exist {
 		// save the user file relationship to the database
 		if err := db.SaveUserFile(userID, fileID, fileMetas.FileName); err != nil {
 			log.Printf("failed to save user file: %v", err.Error())
-			http.Error(w, "failed to save user file", http.StatusInternalServerError)
+			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to save user file")
 			return
 		}
 	} else {
-		http.Error(w, "file already exists", http.StatusBadRequest)
+		utils.WriteJSONResponse(w, http.StatusOK, "error", "file already exists")
 		return
 	}
 
-	// immediately return the response to the client
-	fmt.Fprintf(w, "upload file successfully")
-
+	utils.WriteJSONResponse(w, http.StatusOK, "success", "file uploaded successfully")
 }
 
 // FileQueryHandler: handles the query request

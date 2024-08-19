@@ -215,6 +215,32 @@
                 closeUploadModal();
             }
         }
+
+        // Handle form submission
+        document.getElementById('uploadForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const formData = new FormData(this);
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(`Success: ${data.message}`);
+                        closeUploadModal(); // Close the modal on success
+                        location.reload();  // Refresh the page on success
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An unexpected error occurred.');
+                });
+        });
     </script>
 </body>
 
