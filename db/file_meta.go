@@ -24,7 +24,7 @@ func SaveFileMeta(fileHash string, fileName string, fileSize int64, filePath str
 }
 
 // GetFileMeta: get the file metadata from the database
-func GetFileMeta(fileID string) (*models.FileMeta, error) {
+func GetFileMeta(fileID int) (*models.FileMeta, error) {
 	query := "SELECT file_hash, file_name, file_size, file_path, create_at, update_at, status FROM tbl_file WHERE id = ?"
 
 	stmt, err := db.Prepare(query)
@@ -42,7 +42,7 @@ func GetFileMeta(fileID string) (*models.FileMeta, error) {
 }
 
 // UpdateFileMeta: update the file metadata in the database
-func UpdateFileMeta(fileID string, updateReq models.UpdateFileMetaRequest) error {
+func UpdateFileMeta(fileID int, updateReq models.UpdateFileMetaRequest) error {
 	query := "UPDATE tbl_file SET file_name = ?, status = ? WHERE id = ?"
 
 	stmt, err := db.Prepare(query)
@@ -60,7 +60,7 @@ func UpdateFileMeta(fileID string, updateReq models.UpdateFileMetaRequest) error
 }
 
 // DeleteFileMeta: delete the file metadata from the database
-func DeleteFileMeta(fileID string) error {
+func DeleteFileMeta(fileID int) error {
 	query := "DELETE FROM tbl_file WHERE id = ?"
 
 	stmt, err := db.Prepare(query)

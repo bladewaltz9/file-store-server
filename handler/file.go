@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/bladewaltz9/file-store-server/db"
@@ -79,8 +80,16 @@ func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileID := r.FormValue("file_id")
-	if fileID == "" {
+	fileIDStr := r.FormValue("file_id")
+	if fileIDStr == "" {
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	// convert the file_id to int
+	fileID, err := strconv.Atoi(fileIDStr)
+	if err != nil {
+		log.Printf("failed to convert file_id to int: %v", err.Error())
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
 		return
 	}
@@ -106,8 +115,16 @@ func FileDownloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileID := strings.TrimPrefix(r.URL.Path, "/file/download/")
-	if fileID == "" {
+	fileIDStr := strings.TrimPrefix(r.URL.Path, "/file/download/")
+	if fileIDStr == "" {
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	// convert the file_id to int
+	fileID, err := strconv.Atoi(fileIDStr)
+	if err != nil {
+		log.Printf("failed to convert file_id to int: %v", err.Error())
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
 		return
 	}
@@ -146,8 +163,16 @@ func FileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the file hash from the request path
-	fileID := strings.TrimPrefix(r.URL.Path, "/file/update/")
-	if fileID == "" {
+	fileIDStr := strings.TrimPrefix(r.URL.Path, "/file/update/")
+	if fileIDStr == "" {
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	// convert the file_id to int
+	fileID, err := strconv.Atoi(fileIDStr)
+	if err != nil {
+		log.Printf("failed to convert file_id to int: %v", err.Error())
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
 		return
 	}
@@ -179,8 +204,16 @@ func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the file hash from the request path
-	fileID := r.URL.Query().Get("file_id")
-	if fileID == "" {
+	fileIDStr := r.URL.Query().Get("file_id")
+	if fileIDStr == "" {
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	// convert the file_id to int
+	fileID, err := strconv.Atoi(fileIDStr)
+	if err != nil {
+		log.Printf("failed to convert file_id to int: %v", err.Error())
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
 		return
 	}
