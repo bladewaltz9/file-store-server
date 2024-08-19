@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bladewaltz9/file-store-server/config"
 	"github.com/bladewaltz9/file-store-server/models"
 	"github.com/dgrijalva/jwt-go"
 )
@@ -31,7 +32,7 @@ func TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// parse the token
 		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-			return []byte("file-store-server"), nil
+			return []byte(config.JWTSecretKey), nil
 		})
 		if err != nil || !token.Valid {
 			http.Error(w, "invalid token", http.StatusUnauthorized)

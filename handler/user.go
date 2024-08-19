@@ -6,6 +6,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/bladewaltz9/file-store-server/config"
 	"github.com/bladewaltz9/file-store-server/db"
 	"github.com/bladewaltz9/file-store-server/models"
 	"github.com/dgrijalva/jwt-go"
@@ -77,10 +78,10 @@ func UserLoginHandler(w http.ResponseWriter, r *http.Request) {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"user_id":  userInfo.UserID,
 			"username": username,
-			"exp":      time.Now().Add(time.Hour * 1).Unix(), // set expiration time
+			"exp":      time.Now().Add(config.JWTExpirationTime).Unix(), // set expiration time
 		})
 
-		tokenStr, err := token.SignedString([]byte("file-store-server"))
+		tokenStr, err := token.SignedString([]byte(config.JWTSecretKey))
 		if err != nil {
 			log.Printf("failed to generate token: %v", err.Error())
 			http.Error(w, "failed to generate token", http.StatusInternalServerError)

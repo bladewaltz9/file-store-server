@@ -7,9 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/bladewaltz9/file-store-server/config"
 	"github.com/bladewaltz9/file-store-server/db"
 	"github.com/bladewaltz9/file-store-server/models"
 	"github.com/bladewaltz9/file-store-server/utils"
@@ -24,7 +26,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// handle the upload file
-	r.ParseMultipartForm(32 << 20) // limit the file size to 32MB
+	r.ParseMultipartForm(config.MaxUploadSize) // limit the file size
 
 	userID, err := strconv.Atoi(r.FormValue("user_id"))
 	if err != nil {
@@ -42,7 +44,15 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	fileMetas := models.FileMeta{}
 	fileMetas.FileName = header.Filename
-	fileMetas.FilePath = "/tmp/" + uuid.New().String() + "_" + header.Filename
+	fileMetas.FilePath = config.FileStorePath + uuid.New().String() + "_" + header.Filename
+
+	// create the file directory
+	fileDir := filepath.Dir(fileMetas.FilePath)
+	if err := os.MkdirAll(fileDir, os.ModePerm); err != nil {
+		log.Printf("failed to create file directory: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to create file directory")
+		return
+	}
 
 	// save the file to the local disk
 	newFile, err := os.Create(fileMetas.FilePath)
