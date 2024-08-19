@@ -34,6 +34,7 @@ CREATE TABLE `tbl_user_file` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL COMMENT '用户ID',
   `file_id` INT NOT NULL COMMENT '文件ID',
+  `file_name` VARCHAR(256) NOT NULL DEFAULT '' COMMENT '文件名',
   `upload_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
   `status` ENUM('active', 'disabled', 'deleted') NOT NULL DEFAULT 'active' COMMENT '文件状态',
   FOREIGN KEY (`user_id`) REFERENCES `tbl_user`(`id`) ON DELETE CASCADE,

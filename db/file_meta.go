@@ -131,8 +131,8 @@ func UserFileExists(userID int, fileID int) (bool, error) {
 }
 
 // SaveUserFile: save the user file relationship to the database
-func SaveUserFile(userID int, fileID int) error {
-	query := "INSERT INTO tbl_user_file (user_id, file_id) VALUES (?, ?)"
+func SaveUserFile(userID int, fileID int, fileName string) error {
+	query := "INSERT INTO tbl_user_file (user_id, file_id, file_name) VALUES (?, ?, ?)"
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -140,7 +140,7 @@ func SaveUserFile(userID int, fileID int) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(userID, fileID)
+	_, err = stmt.Exec(userID, fileID, fileName)
 	if err != nil {
 		return fmt.Errorf("failed to execute the query: %v", err.Error())
 	}

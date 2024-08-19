@@ -26,7 +26,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// handle the upload file
 	r.ParseMultipartForm(32 << 20) // limit the file size to 32MB
 
-	user_id, err := strconv.Atoi(r.FormValue("user_id"))
+	userID, err := strconv.Atoi(r.FormValue("user_id"))
 	if err != nil {
 		log.Printf("failed to convert user_id to int: %v", err.Error())
 		http.Error(w, "invalid parameter", http.StatusBadRequest)
@@ -94,7 +94,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if the file exists in the user file table
-	exist, err = db.UserFileExists(user_id, fileID)
+	exist, err = db.UserFileExists(userID, fileID)
 	if err != nil {
 		log.Printf("failed to check if the file exists: %v", err.Error())
 		http.Error(w, "failed to check if the file exists", http.StatusInternalServerError)
@@ -102,7 +102,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if !exist {
 		// save the user file relationship to the database
-		if err := db.SaveUserFile(user_id, fileID); err != nil {
+		if err := db.SaveUserFile(userID, fileID, fileMetas.FileName); err != nil {
 			log.Printf("failed to save user file: %v", err.Error())
 			http.Error(w, "failed to save user file", http.StatusInternalServerError)
 			return
