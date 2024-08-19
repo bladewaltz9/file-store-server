@@ -9,11 +9,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/bladewaltz9/file-store-server/db"
 	"github.com/bladewaltz9/file-store-server/models"
 	"github.com/bladewaltz9/file-store-server/utils"
+	"github.com/google/uuid"
 )
 
 // FileUploadHandler: handles the upload request
@@ -42,7 +42,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	fileMetas := models.FileMeta{}
 	fileMetas.FileName = header.Filename
-	fileMetas.FilePath = "/tmp/" + time.Now().Format("20060102150405") + "_" + header.Filename
+	fileMetas.FilePath = "/tmp/" + uuid.New().String() + "_" + header.Filename
 
 	// save the file to the local disk
 	newFile, err := os.Create(fileMetas.FilePath)
