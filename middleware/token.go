@@ -10,39 +10,53 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+// extractToken: extract the token from the request
+func extractToken(r *http.Request) string {
+	// get the token from the header
+	tokenStr := r.Header.Get("Authorization")
+	tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
+
+	// get the token from the cookie if the header is missing
+	if tokenStr == "" {
+		tokenCookie, err := r.Cookie("token")
+		if err == nil {
+			tokenStr = tokenCookie.Value
+		}
+	}
+	return tokenStr
+}
+
+// validateToken: validate the token
+func ValidateToken(tokenStr string) (jwt.MapClaims, error) {
+	// parse the token
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		return []byte(config.JWTSecretKey), nil
+	})
+	if err != nil || !token.Valid {
+		return nil, err
+	}
+
+	// get the claims from the token
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, err
+	}
+	return claims, nil
+}
+
 // TokenAuthMiddleware: middleware to authenticate the token
 func TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// get the token from the header
-		tokenStr := r.Header.Get("Authorization")
-		tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
 
-		// get the token from the cookie if the header is missing
-		if tokenStr == "" {
-			tokenCookie, err := r.Cookie("token")
-			if err == nil {
-				tokenStr = tokenCookie.Value
-			}
-		}
-
+		tokenStr := extractToken(r)
 		if tokenStr == "" {
 			http.Error(w, "Authorization header missing", http.StatusUnauthorized)
 			return
 		}
 
-		// parse the token
-		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-			return []byte(config.JWTSecretKey), nil
-		})
-		if err != nil || !token.Valid {
+		claims, err := ValidateToken(tokenStr)
+		if err != nil {
 			http.Error(w, "invalid token", http.StatusUnauthorized)
-			return
-		}
-
-		// get the claims from the token
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			http.Error(w, "invalid token claim", http.StatusUnauthorized)
 			return
 		}
 
@@ -52,4 +66,15 @@ func TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// IsAuthenticated: check if the user is authenticated
+func IsAuthenticated(r *http.Request) bool {
+	tokenStr := extractToken(r)
+	if tokenStr == "" {
+		return false
+	}
+
+	_, err := ValidateToken(tokenStr)
+	return err == nil
 }

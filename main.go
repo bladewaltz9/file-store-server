@@ -20,6 +20,13 @@ func main() {
 	http.HandleFunc("/user/login", handler.UserLoginHandler)
 
 	http.HandleFunc("/dashboard", middleware.TokenAuthMiddleware(handler.DashboardHandler))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if middleware.IsAuthenticated(r) {
+			http.Redirect(w, r, "/dashboard", http.StatusFound)
+		} else {
+			http.Redirect(w, r, "/user/login", http.StatusFound)
+		}
+	})
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
