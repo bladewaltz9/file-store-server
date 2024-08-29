@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/bladewaltz9/file-store-server/config"
-	"github.com/bladewaltz9/file-store-server/db"
 	"github.com/bladewaltz9/file-store-server/models"
 	"github.com/bladewaltz9/file-store-server/utils"
 	"github.com/google/uuid"
@@ -170,11 +169,11 @@ func FileChunksMergeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// delete the file chunks
-	if err := os.RemoveAll(chunkDir); err != nil {
-		log.Printf("failed to delete chunk directory: %v", err.Error())
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to delete chunk directory")
-		return
-	}
+	go func() {
+		if err := os.RemoveAll(chunkDir); err != nil {
+			log.Printf("failed to delete chunk directory: %v", err.Error())
+		}
+	}()
 
 	// calculate the hash of the file
 	fileMetas.FileHash, err = utils.CalculateSHA256(newFile)
@@ -184,43 +183,12 @@ func FileChunksMergeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// save the file metadata to the database
-	exist, fileID, err := db.FileExists(fileMetas.FileHash)
-	if err != nil {
-		log.Printf("failed to check if the file exists: %v", err.Error())
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to check if the file exists")
-		return
-	}
-	if !exist { // If the file does not exist, save the file metadata to the database
-		fileID, err = db.SaveFileMeta(fileMetas.FileHash, fileMetas.FileName, fileMetas.FileSize, fileMetas.FilePath)
-		if err != nil {
-			log.Printf("failed to save file metadata: %v", err.Error())
-			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to save file metadata")
-			return
-		}
-	} else { // If the file exists, delete the file
-		if err := os.Remove(fileMetas.FilePath); err != nil {
-			log.Printf("failed to delete file: %v", err.Error())
-			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to delete file")
-			return
-		}
-	}
+	// TODO: check file hash
 
-	// check if the file exists in the user file table
-	exist, err = db.UserFileExists(userID, fileID)
-	if err != nil {
-		log.Printf("failed to check if the file exists: %v", err.Error())
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to check if the file exists")
-		return
-	}
-	if !exist {
-		if err := db.SaveUserFile(userID, fileID, fileMetas.FileName); err != nil {
-			log.Printf("failed to save user file: %v", err.Error())
-			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to save user file")
-			return
-		}
-	} else {
-		utils.WriteJSONResponse(w, http.StatusOK, "success", "file already exists")
+	// save the file metadata to the database
+	if err := utils.SaveUserFileDB(fileMetas, userID); err != nil {
+		log.Printf("failed to save file metadata: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", err.Error())
 		return
 	}
 

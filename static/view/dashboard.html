@@ -82,6 +82,23 @@
             background-color: #218838;
         }
 
+        .btn-delete {
+            background-color: #dc3545;
+            padding: 6px 12px;
+            font-size: 12px;
+            text-decoration: none;
+            color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+            margin-left: 10px;
+            /* Add some space between buttons */
+        }
+
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
+
         .file-list {
             width: 100%;
             border-collapse: collapse;
@@ -170,7 +187,11 @@
                     <td>{{.FileName}}</td>
                     <td>{{.FileSize}}</td>
                     <td>{{.UploadTime}}</td>
-                    <td><a href="/file/download/{{.FileID}}" class="btn-download">Download</a></td>
+                    <td>
+                        <a href="/file/download/{{.FileID}}" class="btn-download">Download</a>
+                        <a href="javascript:void(0);" class="btn-delete" onclick="deleteFile('{{.FileID}}')">Delete</a>
+                    </td>
+
                 </tr>
                 {{else}}
                 <tr>
@@ -339,6 +360,27 @@
                     console.error('Error:', error);
                     alert('An unexpected error occurred.');
                 });
+        }
+
+        function deleteFile(fileID) {
+            if (confirm('Are you sure you want to delete this file?')) {
+                fetch(`/file/delete/${userID}/${fileID}`, {
+                    method: 'DELETE'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            alert('File deleted successfully');
+                            location.reload(); // Refresh the page on success
+                        } else {
+                            alert(`Error: ${data.message}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An unexpected error occurred.');
+                    });
+            }
         }
     </script>
 </body>

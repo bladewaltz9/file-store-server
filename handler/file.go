@@ -26,7 +26,16 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// handle the upload file
-	r.ParseMultipartForm(config.MaxUploadSize) // limit the file size
+	if err := r.ParseMultipartForm(config.MaxUploadSize); err != nil {
+		if err == http.ErrContentLength {
+			log.Printf("uploaded file is too large: %v", err)
+			utils.WriteJSONResponse(w, http.StatusRequestEntityTooLarge, "error", "uploaded file is too large")
+		} else {
+			log.Printf("failed to parse multipart form: %v", err)
+			utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "failed to parse form data")
+		}
+		return
+	}
 
 	userID, err := strconv.Atoi(r.FormValue("user_id"))
 	if err != nil {
@@ -42,7 +51,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	fileMetas := models.FileMeta{}
+	fileMetas := &models.FileMeta{}
 	fileMetas.FileName = header.Filename
 	fileMetas.FilePath = config.FileStoreDir + uuid.New().String() + "_" + header.Filename
 
@@ -78,45 +87,10 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check if the file exists in the file table
-	exist, fileID, err := db.FileExists(fileMetas.FileHash)
-	if err != nil {
-		log.Printf("failed to check if the file exists: %v", err.Error())
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to check if the file exists")
-		return
-	}
-	if !exist {
-		// save the file metadata to the database
-		fileID, err = db.SaveFileMeta(fileMetas.FileHash, fileMetas.FileName, fileMetas.FileSize, fileMetas.FilePath)
-		if err != nil {
-			log.Printf("failed to save file metadata: %v", err.Error())
-			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to save file metadata")
-			return
-		}
-	} else {
-		if err := os.Remove(fileMetas.FilePath); err != nil {
-			log.Printf("failed to delete file: %v", err.Error())
-			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to delete file")
-			return
-		}
-	}
-
-	// check if the file exists in the user file table
-	exist, err = db.UserFileExists(userID, fileID)
-	if err != nil {
-		log.Printf("failed to check if the file exists: %v", err.Error())
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to check if the file exists")
-		return
-	}
-	if !exist {
-		// save the user file relationship to the database
-		if err := db.SaveUserFile(userID, fileID, fileMetas.FileName); err != nil {
-			log.Printf("failed to save user file: %v", err.Error())
-			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to save user file")
-			return
-		}
-	} else {
-		utils.WriteJSONResponse(w, http.StatusOK, "error", "file already exists")
+	// save the file metadata to the database
+	if err := utils.SaveUserFileDB(fileMetas, userID); err != nil {
+		log.Printf("failed to save file metadata: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", err.Error())
 		return
 	}
 
@@ -249,46 +223,45 @@ func FileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 // FileDeleteHandler: handles the delete request
 func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, "error", "invalid method")
 		return
 	}
 
-	// get the file hash from the request path
-	fileIDStr := r.URL.Query().Get("file_id")
-	if fileIDStr == "" {
-		http.Error(w, "invalid parameter", http.StatusBadRequest)
+	// get the user_id and file_id from the request path
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) != 5 {
+		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "invalid parameter")
 		return
 	}
-
-	// convert the file_id to int
-	fileID, err := strconv.Atoi(fileIDStr)
+	userID, err := strconv.Atoi(parts[3])
+	if err != nil {
+		log.Printf("failed to convert user_id to int: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "invalid parameter")
+		return
+	}
+	fileID, err := strconv.Atoi(parts[4])
 	if err != nil {
 		log.Printf("failed to convert file_id to int: %v", err.Error())
-		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "invalid parameter")
 		return
 	}
 
-	// delete file from the local disk
-	fileMeta, err := db.GetFileMeta(fileID)
+	// delete the file
+	ok, filePath, err := db.DeleteUserFile(userID, fileID)
 	if err != nil {
-		log.Printf("failed to get file metadata: %v", err.Error())
-		http.Error(w, "failed to get file metadata", http.StatusInternalServerError)
-		return
-	}
-
-	if err := os.Remove(fileMeta.FilePath); err != nil {
 		log.Printf("failed to delete file: %v", err.Error())
-		http.Error(w, "failed to delete file", http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", err.Error())
 		return
 	}
 
-	// delete file metadata from the database
-	if err := db.DeleteFileMeta(fileID); err != nil {
-		log.Printf("failed to delete file metadata: %v", err.Error())
-		http.Error(w, "failed to delete file metadata", http.StatusInternalServerError)
-		return
+	// delete the file from the local disk if the reference count is 0
+	if ok {
+		go func() {
+			if err := os.Remove(filePath); err != nil {
+				log.Printf("failed to delete file: %v", err.Error())
+			}
+		}()
 	}
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "delete file successfully")
+	utils.WriteJSONResponse(w, http.StatusOK, "success", "file deleted successfully")
 }

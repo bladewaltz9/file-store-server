@@ -68,23 +68,23 @@ func UpdateFileMeta(fileID int, updateReq models.UpdateFileMetaRequest) error {
 	return nil
 }
 
-// DeleteFileMeta: delete the file metadata from the database
-func DeleteFileMeta(fileID int) error {
-	query := "DELETE FROM tbl_file WHERE id = ?"
+// // DeleteFileMeta: delete the file metadata from the database
+// func DeleteFileMeta(fileID int) error {
+// 	query := "DELETE FROM tbl_file WHERE id = ?"
 
-	stmt, err := db.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("failed to prepare the query: %v", err.Error())
-	}
-	defer stmt.Close()
+// 	stmt, err := db.Prepare(query)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to prepare the query: %v", err.Error())
+// 	}
+// 	defer stmt.Close()
 
-	_, err = stmt.Exec(fileID)
-	if err != nil {
-		return fmt.Errorf("failed to execute the query: %v", err.Error())
-	}
+// 	_, err = stmt.Exec(fileID)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to execute the query: %v", err.Error())
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // FileExists: check if the file exists in the tbl_file
 func FileExists(fileHash string) (bool, int, error) {
@@ -106,44 +106,4 @@ func FileExists(fileHash string) (bool, int, error) {
 	}
 
 	return true, fileID, nil
-}
-
-// UserFileExists: check if the file exists in the tbl_user_file
-func UserFileExists(userID int, fileID int) (bool, error) {
-	query := "SELECT id FROM tbl_user_file WHERE user_id = ? AND file_id = ?"
-
-	stmt, err := db.Prepare(query)
-	if err != nil {
-		return false, fmt.Errorf("failed to prepare the query: %v", err.Error())
-	}
-	defer stmt.Close()
-
-	var id int
-	err = stmt.QueryRow(userID, fileID).Scan(&id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil
-		}
-		return false, err
-	}
-
-	return true, nil
-}
-
-// SaveUserFile: save the user file relationship to the database
-func SaveUserFile(userID int, fileID int, fileName string) error {
-	query := "INSERT INTO tbl_user_file (user_id, file_id, file_name) VALUES (?, ?, ?)"
-
-	stmt, err := db.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("failed to prepare the query: %v", err.Error())
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(userID, fileID, fileName)
-	if err != nil {
-		return fmt.Errorf("failed to execute the query: %v", err.Error())
-	}
-
-	return nil
 }

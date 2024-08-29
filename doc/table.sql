@@ -8,6 +8,7 @@ CREATE TABLE `tbl_file` (
   `create_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建日期',
   `update_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日期',
   `status` ENUM('active', 'disabled', 'deleted') NOT NULL DEFAULT 'active' COMMENT '状态',
+  `reference_count` INT DEFAULT 0 COMMENT '文件引用计数',
   `ext1` INT DEFAULT 0 COMMENT '备用字段1',
   `ext2` TEXT COMMENT '备用字段2',
   UNIQUE KEY `idx_file_hash` (`file_hash`),
