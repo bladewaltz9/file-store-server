@@ -44,7 +44,7 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	fileMetas := models.FileMeta{}
 	fileMetas.FileName = header.Filename
-	fileMetas.FilePath = config.FileStorePath + uuid.New().String() + "_" + header.Filename
+	fileMetas.FilePath = config.FileStoreDir + uuid.New().String() + "_" + header.Filename
 
 	// create the file directory
 	fileDir := filepath.Dir(fileMetas.FilePath)
@@ -77,8 +77,6 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to calculate hash")
 		return
 	}
-
-	var fileID int
 
 	// check if the file exists in the file table
 	exist, fileID, err := db.FileExists(fileMetas.FileHash)

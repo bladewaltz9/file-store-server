@@ -197,11 +197,13 @@
     </div>
 
     <script>
-        const userID = "{{.UserID}}"; // Assuming {{.UserID}} is rendered as a string in the HTML
+        const userID = "{{.UserID}}";
+        const CHUNK_SIZE = 1024 * 1024; // 1MB
+        const MAX_NORMAL_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
 
         function openUploadModal() {
-            const form = document.getElementById('uploadForm');
-            form.action = `/file/upload?user_id=${userID}`;
+            // const form = document.getElementById('uploadForm');
+            // form.action = `/file/upload?user_id=${userID}`;
             document.getElementById('uploadModal').style.display = 'block';
         }
 
@@ -219,10 +221,35 @@
         // Handle form submission
         document.getElementById('uploadForm').addEventListener('submit', function (event) {
             event.preventDefault(); // Prevent default form submission
+            const fileUpload = document.getElementById('fileUpload');
+            const file = fileUpload.files[0];
 
-            const formData = new FormData(this);
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
 
-            fetch(this.action, {
+            if (file.size > MAX_NORMAL_UPLOAD_SIZE) {
+                // alert('Uploading file in chunks...');
+                uploadChunked(file); // Upload in chunks for large files
+            } else {
+                // alert('Uploading file normally...');
+                uploadRegular(file); // Upload normally for small files
+            }
+        });
+
+        // Function to generate a unique file ID
+        function generateFileID(file) {
+            return `${userID}-${Date.now()}-${file.name}`;
+        }
+
+        // Upload small files normally
+        function uploadRegular(file) {
+            const formData = new FormData();
+            formData.append('file_id', generateFileID(file)); // Function to generate a unique ID
+            formData.append('file', file);
+
+            fetch(`/file/upload?user_id=${userID}`, {
                 method: 'POST',
                 body: formData
             })
@@ -230,8 +257,80 @@
                 .then(data => {
                     if (data.status === 'success') {
                         alert(`Success: ${data.message}`);
-                        closeUploadModal(); // Close the modal on success
-                        location.reload();  // Refresh the page on success
+                        closeUploadModal();
+                        location.reload(); // Refresh the page on success
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(`An unexpected error occurred: ${error.message || error}`);
+                });
+        }
+
+        // Upload large files in chunks
+        function uploadChunked(file) {
+            const fileID = generateFileID(file);
+            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            let start = 0;
+            let end = Math.min(CHUNK_SIZE, file.size);
+
+            const uploadChunk = async (file, fileID, chunkNumber, totalChunks) => {
+                const chunk = file.slice(start, end);
+                const formData = new FormData();
+                formData.append('file_id', fileID);
+                formData.append('file_name', file.name);
+                formData.append('chunk_index', chunkNumber);
+                formData.append('total_chunks', totalChunks);
+                formData.append('file', chunk);
+
+                try {
+                    const response = await fetch(`/file/upload/chunk?user_id=${userID}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        console.log(`Chunk ${chunkNumber} uploaded successfully.`);
+                        start = end;
+                        end = Math.min(start + CHUNK_SIZE, file.size);
+
+                        if (start < file.size) {
+                            uploadChunk(file, fileID, chunkNumber + 1, totalChunks);
+                        } else {
+                            console.log('All chunks uploaded successfully.');
+                            mergeChunks(fileID, totalChunks);
+                        }
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An unexpected error occurred.');
+                }
+            };
+
+            uploadChunk(file, fileID, 0, totalChunks);
+        }
+
+
+        // Merge chunks after all chunks are uploaded
+        function mergeChunks(fileID, totalChunks) {
+            const formData = new FormData();
+            formData.append('file_id', fileID);
+
+            fetch(`/file/merge?user_id=${userID}`, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(`Success: ${data.message}`);
+                        closeUploadModal();
+                        location.reload(); // Refresh the page on success
                     } else {
                         alert(`Error: ${data.message}`);
                     }
@@ -240,7 +339,7 @@
                     console.error('Error:', error);
                     alert('An unexpected error occurred.');
                 });
-        });
+        }
     </script>
 </body>
 

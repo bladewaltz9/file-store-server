@@ -3,7 +3,8 @@ package config
 import "time"
 
 const (
-	FileStorePath = "/tmp/file-store-server/"
+	FileStoreDir  = "/home/bladewaltz/data/files/"
+	FileChunkDir  = "/home/bladewaltz/data/chunks/"
 	MaxUploadSize = 32 << 20 // 32MB
 
 	// MySQL config

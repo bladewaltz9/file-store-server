@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 // FileMeta: file metadata structure
 type FileMeta struct {
@@ -18,4 +21,14 @@ type FileMeta struct {
 type UpdateFileMetaRequest struct {
 	FileName string `json:"file_name"`
 	Status   string `json:"status"`
+}
+
+var ChunkStatusMap = sync.Map{}
+
+// FileChunkInfo: file chunk information structure
+type FileChunkInfo struct {
+	FileID         string       `json:"file_id"`
+	FileName       string       `json:"file_name"`
+	TotalChunks    int          `json:"total_chunks"`
+	ReceivedChunks map[int]bool `json:"received_chunks"`
 }
