@@ -18,4 +18,8 @@ const (
 	// JWT config
 	JWTSecretKey      = "BxHpBYB3rey1bOidVbcCiHa389t5edWkW7yo1vPLXxc="
 	JWTExpirationTime = time.Hour * 1 // 1 hour
+
+	// HTTPS config
+	CertFile = "/etc/apache2/ssl/bladewaltz.cn.crt"
+	KeyFile  = "/etc/apache2/ssl/bladewaltz.cn.key"
 )

@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/bladewaltz9/file-store-server/config"
 	"github.com/bladewaltz9/file-store-server/handler"
 	"github.com/bladewaltz9/file-store-server/middleware"
 )
@@ -33,7 +34,8 @@ func main() {
 		}
 	})
 
-	err := http.ListenAndServe(":8080", nil)
+	// start the server
+	err := http.ListenAndServeTLS(":8080", config.CertFile, config.KeyFile, nil)
 	if err != nil {
 		panic(err)
 	}
