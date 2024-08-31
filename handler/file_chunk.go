@@ -35,6 +35,7 @@ func FileChunkedUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fileIDStr := r.FormValue("file_id")
+	chunkHash := r.FormValue("chunk_hash")
 	fileName := r.FormValue("file_name")
 	chunkIndex, err := strconv.Atoi(r.FormValue("chunk_index"))
 	if err != nil {
@@ -78,6 +79,26 @@ func FileChunkedUploadHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err = io.Copy(newFile, file); err != nil {
 		log.Printf("failed to save file: %v", err.Error())
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to save file")
+		return
+	}
+
+	// calculate the hash of the chunk
+	chunkHashCalculated, err := utils.CalculateSHA256(newFile)
+	if err != nil {
+		log.Printf("failed to calculate hash: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to calculate hash")
+		return
+	}
+	// check the chunk hash with the hash from the client
+	if chunkHash != chunkHashCalculated {
+		// delete the chunk from the local disk
+		go func() {
+			if err := os.Remove(chunkPath); err != nil {
+				log.Printf("failed to delete chunk: %v", err.Error())
+			}
+		}()
+		log.Printf("chunk hash does not match: %v", chunkHashCalculated)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "chunk hash does not match")
 		return
 	}
 

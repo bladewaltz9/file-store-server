@@ -369,7 +369,7 @@
             let start = 0;
             let end = Math.min(CHUNK_SIZE, file.size);
 
-            const uploadChunk = async (file, fileID, chunkNumber, totalChunks) => {
+            const uploadChunk = async (file, fileID, chunkNumber, totalChunks, retryCount = 3) => {
                 const chunk = file.slice(start, end);
                 const chunk_hash = await calculateHash(chunk);
                 const formData = new FormData();
@@ -399,11 +399,21 @@
                             mergeChunks(fileID, totalChunks, fileHash);
                         }
                     } else {
-                        alert(`Error: ${data.message}`);
+                        if (retryCount > 0) {
+                            console.log(`Retrying chunk ${chunkNumber}...`);
+                            uploadChunk(file, fileID, chunkNumber, totalChunks, retryCount - 1);
+                        } else {
+                            alert(`Error: ${data.message}`);
+                        }
                     }
                 } catch (error) {
-                    console.error('Error:', error);
-                    alert('An unexpected error occurred.');
+                    if (retryCount > 0) {
+                        console.log(`Retrying chunk ${chunkNumber}...`);
+                        uploadChunk(file, fileID, chunkNumber, totalChunks, retryCount - 1);
+                    } else {
+                        console.error('Error:', error);
+                        alert('An unexpected error occurred.');
+                    }
                 }
             };
 
