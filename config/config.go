@@ -1,28 +1,59 @@
 package config
 
-import "time"
+import (
+	"log"
+	"os"
+	"strconv"
+	"time"
 
+	"github.com/joho/godotenv"
+)
+
+// Directory path
 const (
-	FileStoreDir  = "/home/bladewaltz/data/files/"
-	FileChunkDir  = "/home/bladewaltz/data/chunks/"
-	MaxUploadSize = 32 << 20 // 32MB
+	FileStoreDir = "/home/bladewaltz/data/files/"
+	FileChunkDir = "/home/bladewaltz/data/chunks/"
+)
 
-	// MySQL config
-	DBHost     = "127.0.0.1"
-	DBPort     = 3306
-	DBUser     = "root"
-	DBPassword = "Lollzp1999!"
-	DBName     = "file_server"
+// Upload size limit
+const MaxUploadSize = 32 << 20 // 32MB
 
+// MySQL config
+var (
+	DBHost     string
+	DBPort     int
+	DBUser     string
+	DBPassword string
+	DBName     string
+
+	// database connection pool settings
 	DBMaxConn         = 100
 	DBMaxIdleConn     = 30
 	DBConnMaxLifetime = time.Hour
+)
 
-	// JWT config
-	JWTSecretKey      = "BxHpBYB3rey1bOidVbcCiHa389t5edWkW7yo1vPLXxc="
+// JWT config
+var (
+	JWTSecretKey      string
 	JWTExpirationTime = time.Hour * 1 // 1 hour
+)
 
-	// HTTPS config
+// SSL cert and key
+const (
 	CertFile = "/etc/apache2/ssl/bladewaltz.cn.crt"
 	KeyFile  = "/etc/apache2/ssl/bladewaltz.cn.key"
 )
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	DBHost = os.Getenv("MYSQL_HOST")
+	DBPort, _ = strconv.Atoi(os.Getenv("MYSQL_PORT"))
+	DBUser = os.Getenv("MYSQL_USER")
+	DBPassword = os.Getenv("MYSQL_PASSWORD")
+	DBName = os.Getenv("MYSQL_DATABASE")
+
+	JWTSecretKey = os.Getenv("JWT_SECRET_KEY")
+}

@@ -1,0 +1,31 @@
+# Go build output
+*.exe
+*.test
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE/Editor specific
+.idea/
+.vscode/
+*.suo
+*.swp
+*.sublime-workspace
+*.sublime-project
+
+# Environment files
+.env
+
+# Logs
+*.log
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
