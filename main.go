@@ -15,6 +15,7 @@ func main() {
 	http.HandleFunc("/file/download/", middleware.TokenAuthMiddleware(handler.FileDownloadHandler))
 	http.HandleFunc("/file/update/", middleware.TokenAuthMiddleware(handler.FileUpdateHandler))
 	http.HandleFunc("/file/delete/", middleware.TokenAuthMiddleware(handler.FileDeleteHandler))
+	http.HandleFunc("/file/fastupload", middleware.TokenAuthMiddleware(handler.FileFastUploadHandler))
 
 	// file chunked handler
 	http.HandleFunc("/file/upload/chunk", middleware.TokenAuthMiddleware(handler.FileChunkedUploadHandler))

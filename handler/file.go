@@ -37,12 +37,14 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// get the user_id, file_hash, and file from the form
 	userID, err := strconv.Atoi(r.FormValue("user_id"))
 	if err != nil {
 		log.Printf("failed to convert user_id to int: %v", err.Error())
 		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "invalid parameter")
 		return
 	}
+	fileHash := r.FormValue("file_hash")
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		log.Printf("failed to get data from form: %v", err.Error())
@@ -84,6 +86,19 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to calculate hash: %v", err.Error())
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to calculate hash")
+		return
+	}
+
+	// check the file hash with the hash from the client
+	if fileMetas.FileHash != fileHash {
+		// delete the file from the local disk
+		go func() {
+			if err := os.Remove(fileMetas.FilePath); err != nil {
+				log.Printf("failed to delete file: %v", err.Error())
+			}
+		}()
+		log.Printf("file hash does not match")
+		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "file hash does not match")
 		return
 	}
 
@@ -264,4 +279,64 @@ func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSONResponse(w, http.StatusOK, "success", "file deleted successfully")
+}
+
+// FileFastUploadHandler: fast upload the file if the file already exists
+func FileFastUploadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, "error", "invalid method")
+		return
+	}
+
+	// get the user_id, file_hash, and file_name from the form
+	fileHash := r.FormValue("file_hash")
+	fileName := r.FormValue("file_name")
+	userID, err := strconv.Atoi(r.FormValue("user_id"))
+	if err != nil {
+		log.Printf("failed to convert user_id to int: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "invalid parameter")
+		return
+	}
+	if fileHash == "" || fileName == "" {
+		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "invalid parameter")
+		return
+	}
+
+	// check if the file exists
+	exist, fileID, err := db.FileExists(fileHash)
+	if err != nil {
+		log.Printf("failed to check if the file exists: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to check if the file exists")
+		return
+	}
+
+	// if the file does not exist, return the status of "not_exists"
+	if !exist {
+		utils.WriteJSONResponse(w, http.StatusOK, "not_exists", "file does not exist")
+		return
+	}
+
+	// check if the file exists in the user file table
+	exist, err = db.UserFileExists(userID, fileID)
+	if err != nil {
+		log.Printf("failed to check if the file exists: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to check if the file exists")
+		return
+	}
+
+	// if the file exists in the user file table, return the status of "repeat"
+	if exist {
+		utils.WriteJSONResponse(w, http.StatusOK, "repeat", "file already exists")
+		return
+	}
+
+	// save the file to the user file table
+	if err := db.SaveUserFile(userID, fileID, fileName); err != nil {
+		log.Printf("failed to save user file: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to save user file")
+		return
+	}
+
+	// return the status of "success"
+	utils.WriteJSONResponse(w, http.StatusOK, "success", "file fast uploaded successfully")
 }

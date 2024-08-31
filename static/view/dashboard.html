@@ -240,7 +240,7 @@
         }
 
         // Handle form submission
-        document.getElementById('uploadForm').addEventListener('submit', function (event) {
+        document.getElementById('uploadForm').addEventListener('submit', async function (event) {
             event.preventDefault(); // Prevent default form submission
             const fileUpload = document.getElementById('fileUpload');
             const file = fileUpload.files[0];
@@ -250,12 +250,33 @@
                 return;
             }
 
+            // fast upload if file exists
+            const { fileHash, status, message } = await tryFastUpload(file);
+
+            switch (status) {
+                case 'repeat':  // user already uploaded this file
+                    alert('File already exists.');
+                    return;
+
+                case 'success': // file fast uploaded successfully
+                    alert(`Success: File uploaded successfully.`);
+                    closeUploadModal();
+                    location.reload(); // Refresh the page on success
+                    return
+
+                case 'not_exists': // file does not exist, start uploading
+                    break;
+
+                default:
+                    console.error('Unexpected response status:', data.status);
+                    alert('An unexpected error occurred.');
+                    return
+            }
+
             if (file.size > MAX_NORMAL_UPLOAD_SIZE) {
-                // alert('Uploading file in chunks...');
-                uploadChunked(file); // Upload in chunks for large files
+                uploadChunked(file, fileHash); // Upload in chunks for large files
             } else {
-                // alert('Uploading file normally...');
-                uploadRegular(file); // Upload normally for small files
+                uploadRegular(file, fileHash); // Upload normally for small files
             }
         });
 
@@ -264,18 +285,68 @@
             return `${userID}-${Date.now()}-${file.name}`;
         }
 
+        // Function to calculate the SHA-256 hash of a file
+        async function calculateHash(file) {
+            try {
+                // Check if the browser supports the required APIs
+                if (!crypto || !crypto.subtle || typeof crypto.subtle.digest !== 'function') {
+                    throw new Error('Your environment does not support crypto.subtle.digest.');
+                }
+
+                const buffer = await file.arrayBuffer();
+                const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+                return hashHex;
+            } catch (error) {
+                throw new Error(error.message || 'An unexpected error occurred.');
+            }
+        }
+
+        // Check if the file already exists on the server
+        async function tryFastUpload(file) {
+            const fileHash = await calculateHash(file);
+            const formData = new FormData();
+            formData.append('file_hash', fileHash);
+            formData.append('file_name', file.name);
+            formData.append('user_id', userID);
+
+            const response = await fetch(`/file/fastupload`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            return {
+                fileHash: fileHash,
+                status: data.status,
+                message: data.message
+            }
+        }
+
         // Upload small files normally
-        function uploadRegular(file) {
+        function uploadRegular(file, fileHash) {
+            // Create a new FormData object
             const formData = new FormData();
             formData.append('file_id', generateFileID(file)); // Function to generate a unique ID
+            formData.append('file_hash', fileHash);
             formData.append('file', file);
 
+            // Send the file to the server
             fetch(`/file/upload?user_id=${userID}`, {
                 method: 'POST',
                 body: formData
             })
-                .then(response => response.json())
-                .then(data => {
+                .then(function (response) {
+                    // Check if the response is okay (status code 200-299)
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok.');
+                    }
+                    // Parse the JSON response
+                    return response.json();
+                })
+                .then(function (data) {
+                    // Handle the parsed data
                     if (data.status === 'success') {
                         alert(`Success: ${data.message}`);
                         closeUploadModal();
@@ -284,14 +355,15 @@
                         alert(`Error: ${data.message}`);
                     }
                 })
-                .catch(error => {
+                .catch(function (error) {
+                    // Handle errors
                     console.error('Error:', error);
                     alert(`An unexpected error occurred: ${error.message || error}`);
                 });
         }
 
         // Upload large files in chunks
-        function uploadChunked(file) {
+        async function uploadChunked(file, fileHash) {
             const fileID = generateFileID(file);
             const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
             let start = 0;
@@ -299,8 +371,10 @@
 
             const uploadChunk = async (file, fileID, chunkNumber, totalChunks) => {
                 const chunk = file.slice(start, end);
+                const chunk_hash = await calculateHash(chunk);
                 const formData = new FormData();
                 formData.append('file_id', fileID);
+                formData.append('chunk_hash', chunk_hash);
                 formData.append('file_name', file.name);
                 formData.append('chunk_index', chunkNumber);
                 formData.append('total_chunks', totalChunks);
@@ -322,7 +396,7 @@
                             uploadChunk(file, fileID, chunkNumber + 1, totalChunks);
                         } else {
                             console.log('All chunks uploaded successfully.');
-                            mergeChunks(fileID, totalChunks);
+                            mergeChunks(fileID, totalChunks, fileHash);
                         }
                     } else {
                         alert(`Error: ${data.message}`);
@@ -338,9 +412,10 @@
 
 
         // Merge chunks after all chunks are uploaded
-        function mergeChunks(fileID, totalChunks) {
+        async function mergeChunks(fileID, totalChunks, fileHash) {
             const formData = new FormData();
             formData.append('file_id', fileID);
+            formData.append('file_hash', fileHash);
 
             fetch(`/file/merge?user_id=${userID}`, {
                 method: 'POST',

@@ -102,6 +102,7 @@ func FileChunksMergeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// parse the form data
 	userID, err := strconv.Atoi(r.FormValue("user_id"))
 	if err != nil {
 		log.Printf("failed to convert user_id to int: %v", err.Error())
@@ -109,6 +110,7 @@ func FileChunksMergeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fileIDStr := r.FormValue("file_id")
+	fileHash := r.FormValue("file_hash")
 
 	// get the file chunk info
 	val, ok := models.ChunkStatusMap.Load(fileIDStr)
@@ -183,7 +185,18 @@ func FileChunksMergeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: check file hash
+	// check the file hash with the hash from the client
+	if fileMetas.FileHash != fileHash {
+		// delete the file from the local disk
+		go func() {
+			if err := os.Remove(fileMetas.FilePath); err != nil {
+				log.Printf("failed to delete file: %v", err.Error())
+			}
+		}()
+		log.Printf("file hash does not match: %v", fileMetas.FileHash)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "file hash does not match")
+		return
+	}
 
 	// save the file metadata to the database
 	if err := utils.SaveUserFileDB(fileMetas, userID); err != nil {

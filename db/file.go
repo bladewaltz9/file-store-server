@@ -68,24 +68,6 @@ func UpdateFileMeta(fileID int, updateReq models.UpdateFileMetaRequest) error {
 	return nil
 }
 
-// // DeleteFileMeta: delete the file metadata from the database
-// func DeleteFileMeta(fileID int) error {
-// 	query := "DELETE FROM tbl_file WHERE id = ?"
-
-// 	stmt, err := db.Prepare(query)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to prepare the query: %v", err.Error())
-// 	}
-// 	defer stmt.Close()
-
-// 	_, err = stmt.Exec(fileID)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to execute the query: %v", err.Error())
-// 	}
-
-// 	return nil
-// }
-
 // FileExists: check if the file exists in the tbl_file
 func FileExists(fileHash string) (bool, int, error) {
 	query := "SELECT id FROM tbl_file WHERE file_hash = ?"
