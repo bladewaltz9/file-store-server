@@ -13,7 +13,10 @@ const (
 	DBUser     = "root"
 	DBPassword = "Lollzp1999!"
 	DBName     = "file_server"
-	DBMaxConn  = 1000
+
+	DBMaxConn         = 100
+	DBMaxIdleConn     = 30
+	DBConnMaxLifetime = time.Hour
 
 	// JWT config
 	JWTSecretKey      = "BxHpBYB3rey1bOidVbcCiHa389t5edWkW7yo1vPLXxc="

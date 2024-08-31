@@ -18,7 +18,9 @@ func init() {
 		panic(fmt.Sprintf("Failed to connect to the mysql: %v", err.Error()))
 	}
 
+	db.SetMaxIdleConns(config.DBMaxIdleConn)
 	db.SetMaxOpenConns(config.DBMaxConn)
+	db.SetConnMaxLifetime(config.DBConnMaxLifetime)
 
 	if err := db.Ping(); err != nil {
 		panic(fmt.Sprintf("Failed to ping the mysql: %v", err.Error()))
