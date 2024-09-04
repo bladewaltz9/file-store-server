@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/joho/godotenv"
+	"github.com/bladewaltz9/file-store-server/utils"
 )
 
 // Directory path
@@ -32,6 +32,14 @@ var (
 	DBConnMaxLifetime = time.Hour
 )
 
+// Redis config
+var (
+	RedisHost     string
+	RedisPort     int
+	RedisPassword string
+	RedisDB       int
+)
+
 // JWT config
 var (
 	JWTSecretKey      string
@@ -45,15 +53,25 @@ const (
 )
 
 func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+
+	// Load the environment variables
+	if err := utils.LoadEnv(); err != nil {
+		log.Fatalf("Failed to load the .env file: %v", err)
 	}
 
+	// MySQL
 	DBHost = os.Getenv("MYSQL_HOST")
 	DBPort, _ = strconv.Atoi(os.Getenv("MYSQL_PORT"))
 	DBUser = os.Getenv("MYSQL_USER")
 	DBPassword = os.Getenv("MYSQL_PASSWORD")
 	DBName = os.Getenv("MYSQL_DATABASE")
 
+	// Redis
+	RedisHost = os.Getenv("REDIS_HOST")
+	RedisPort, _ = strconv.Atoi(os.Getenv("REDIS_PORT"))
+	RedisPassword = os.Getenv("REDIS_PASSWORD")
+	RedisDB, _ = strconv.Atoi(os.Getenv("REDIS_DB"))
+
+	// JWT
 	JWTSecretKey = os.Getenv("JWT_SECRET_KEY")
 }

@@ -220,7 +220,7 @@ func FileChunksMergeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// save the file metadata to the database
-	if err := utils.SaveUserFileDB(fileMetas, userID); err != nil {
+	if err := SaveUserFileDB(fileMetas, userID); err != nil {
 		log.Printf("failed to save file metadata: %v", err.Error())
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", err.Error())
 		return
