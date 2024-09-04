@@ -11,6 +11,7 @@ import (
 
 	"github.com/bladewaltz9/file-store-server/config"
 	"github.com/bladewaltz9/file-store-server/models"
+	"github.com/bladewaltz9/file-store-server/redis"
 	"github.com/bladewaltz9/file-store-server/utils"
 	"github.com/google/uuid"
 )
@@ -102,15 +103,24 @@ func FileChunkedUploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Record the received chunk
-	val, _ := models.ChunkStatusMap.LoadOrStore(fileIDStr, &models.FileChunkInfo{
-		FileID:         fileIDStr,
-		FileName:       fileName,
-		TotalChunks:    totalChunks,
-		ReceivedChunks: make(map[int]bool),
-	})
-	chunkInfo := val.(*models.FileChunkInfo)
-	chunkInfo.ReceivedChunks[chunkIndex] = true
+	// store the file info
+	chunkInfo := &models.FileChunkInfo{
+		FileID:      fileIDStr,
+		FileName:    fileName,
+		TotalChunks: totalChunks,
+	}
+	if err := redis.StoreFileChunkInfo(chunkInfo); err != nil {
+		log.Printf("failed to store file info: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to store file info")
+		return
+	}
+
+	// store the chunk status
+	if err := redis.StoreChunkStatus(fileIDStr, chunkIndex); err != nil {
+		log.Printf("failed to store chunk status: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to store chunk status")
+		return
+	}
 
 	// response to the client
 	utils.WriteJSONResponse(w, http.StatusOK, "success", "chunk uploaded successfully")
@@ -133,18 +143,22 @@ func FileChunksMergeHandler(w http.ResponseWriter, r *http.Request) {
 	fileIDStr := r.FormValue("file_id")
 	fileHash := r.FormValue("file_hash")
 
-	// get the file chunk info
-	val, ok := models.ChunkStatusMap.Load(fileIDStr)
-	if !ok {
+	// check if all chunks are received
+	chunkInfo, err := redis.GetFileChunkInfo(fileIDStr)
+	if err != nil || chunkInfo == nil {
 		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "file not found")
 		return
 	}
-	chunkInfo := val.(*models.FileChunkInfo)
-
-	// check if all chunks are received
-	if len(chunkInfo.ReceivedChunks) != chunkInfo.TotalChunks {
-		utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "not all chunks are received")
-		return
+	for i := 0; i < chunkInfo.TotalChunks; i++ {
+		received, err := redis.GetChunkStatus(fileIDStr, i)
+		if err != nil {
+			utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to get chunk status")
+			return
+		}
+		if !received {
+			utils.WriteJSONResponse(w, http.StatusBadRequest, "error", "not all chunks are received, lost chunk: "+strconv.Itoa(i))
+			return
+		}
 	}
 
 	// merge the file chunks

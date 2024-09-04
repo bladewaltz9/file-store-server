@@ -9,27 +9,27 @@ import (
 )
 
 var (
-	// redisClient: redis client
-	redisClient *redis.Client
-	ctx         = context.Background()
+	// rdb: redis client
+	rdb *redis.Client
+	ctx = context.Background()
 )
 
 // InitRedis: initialize the redis client
 func initRedis(addr, password string, db int) {
-	redisClient = redis.NewClient(&redis.Options{
+	rdb = redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
 		DB:       db,
 	})
 
-	_, err := redisClient.Ping(ctx).Result()
+	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to connect to the redis: %v", err.Error()))
 	}
 }
 
 func GetRedisClient() *redis.Client {
-	return redisClient
+	return rdb
 }
 
 func init() {

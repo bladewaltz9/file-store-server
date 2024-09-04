@@ -1,7 +1,6 @@
 package models
 
 import (
-	"sync"
 	"time"
 )
 
@@ -23,12 +22,9 @@ type UpdateFileMetaRequest struct {
 	Status   string `json:"status"`
 }
 
-var ChunkStatusMap = sync.Map{}
-
 // FileChunkInfo: file chunk information structure
 type FileChunkInfo struct {
-	FileID         string       `json:"file_id"`
-	FileName       string       `json:"file_name"`
-	TotalChunks    int          `json:"total_chunks"`
-	ReceivedChunks map[int]bool `json:"received_chunks"`
+	FileID      string `json:"file_id"`
+	FileName    string `json:"file_name"`
+	TotalChunks int    `json:"total_chunks"`
 }
