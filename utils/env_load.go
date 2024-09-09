@@ -11,7 +11,7 @@ const maxSubDirCount = 10
 
 // LoadEnv: load the environment variables
 func LoadEnv() error {
-	path := ".env"
+	path := "config/.env"
 	for i := 0; i < maxSubDirCount; i++ {
 		err := godotenv.Load(path)
 		if err == nil {
