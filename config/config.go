@@ -52,6 +52,14 @@ const (
 	KeyFile  = "/etc/apache2/ssl/bladewaltz.cn.key"
 )
 
+// OSS config
+var (
+	Endpoint        string
+	AccessKeyID     string
+	AccessKeySecret string
+	BucketName      string
+)
+
 func init() {
 
 	// Load the environment variables
@@ -74,4 +82,10 @@ func init() {
 
 	// JWT
 	JWTSecretKey = os.Getenv("JWT_SECRET_KEY")
+
+	// OSS
+	Endpoint = os.Getenv("OSS_ENDPOINT")
+	AccessKeyID = os.Getenv("OSS_ACCESS_KEY_ID")
+	AccessKeySecret = os.Getenv("OSS_ACCESS_KEY_SECRET")
+	BucketName = os.Getenv("OSS_BUCKET_NAME")
 }
