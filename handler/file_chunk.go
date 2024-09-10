@@ -11,7 +11,7 @@ import (
 
 	"github.com/bladewaltz9/file-store-server/config"
 	"github.com/bladewaltz9/file-store-server/models"
-	"github.com/bladewaltz9/file-store-server/oss"
+	"github.com/bladewaltz9/file-store-server/mq"
 	"github.com/bladewaltz9/file-store-server/redis"
 	"github.com/bladewaltz9/file-store-server/utils"
 	"github.com/google/uuid"
@@ -241,12 +241,18 @@ func FileChunksMergeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// save the file to the OSS
-	go func() {
-		if err := oss.UploadFile(config.BucketName, config.BucketDir+fileMetas.FileName, fileMetas.FilePath); err != nil {
-			log.Printf("failed to upload file to the OSS: %v", err.Error())
-		}
-	}()
+	// send the message to the MQ
+	rabbitMQ := mq.GetRabbitMQ()
+	fileMsg := &mq.FileTransferMessage{
+		FileID:    fileMetas.FileID,
+		LocalFile: fileMetas.FilePath,
+		ObjectKey: config.BucketDir + fileMetas.FileName,
+	}
+	if err := rabbitMQ.PublishMessage(fileMsg); err != nil {
+		log.Printf("failed to publish message: %v", err.Error())
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", "failed to publish message")
+		return
+	}
 
 	utils.WriteJSONResponse(w, http.StatusOK, "success", "file uploaded successfully")
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/bladewaltz9/file-store-server/config"
 	"github.com/bladewaltz9/file-store-server/handler"
 	"github.com/bladewaltz9/file-store-server/middleware"
+	"github.com/bladewaltz9/file-store-server/mq"
 )
 
 func main() {
@@ -35,6 +36,14 @@ func main() {
 			http.Redirect(w, r, "/user/login", http.StatusFound)
 		}
 	})
+
+	// start the RabbitMQ consumer
+	go func() {
+		rabbitMQ := mq.GetRabbitMQ()
+		if err := rabbitMQ.ConsumeMessage(); err != nil {
+			panic(err)
+		}
+	}()
 
 	// start the server
 	err := http.ListenAndServeTLS(":8080", config.CertFile, config.KeyFile, nil)
