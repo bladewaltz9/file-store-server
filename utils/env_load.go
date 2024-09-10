@@ -9,8 +9,13 @@ import (
 // maxSubDirCount: the maximum subdirectory count
 const maxSubDirCount = 10
 
+var envLoaded = false
+
 // LoadEnv: load the environment variables
 func LoadEnv() error {
+	if envLoaded {
+		return nil
+	}
 	path := "config/.env"
 	for i := 0; i < maxSubDirCount; i++ {
 		err := godotenv.Load(path)
