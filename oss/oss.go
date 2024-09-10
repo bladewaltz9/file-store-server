@@ -18,7 +18,7 @@ func initOSS(endpoint, accessKeyID, accessKeySecret string) {
 	}
 }
 
-func Init() {
+func init() {
 	initOSS(config.Endpoint, config.AccessKeyID, config.AccessKeySecret)
 }
 

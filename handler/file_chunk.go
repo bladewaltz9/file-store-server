@@ -11,6 +11,7 @@ import (
 
 	"github.com/bladewaltz9/file-store-server/config"
 	"github.com/bladewaltz9/file-store-server/models"
+	"github.com/bladewaltz9/file-store-server/oss"
 	"github.com/bladewaltz9/file-store-server/redis"
 	"github.com/bladewaltz9/file-store-server/utils"
 	"github.com/google/uuid"
@@ -239,6 +240,13 @@ func FileChunksMergeHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, "error", err.Error())
 		return
 	}
+
+	// save the file to the OSS
+	go func() {
+		if err := oss.UploadFile(config.BucketName, config.BucketDir+fileMetas.FileName, fileMetas.FilePath); err != nil {
+			log.Printf("failed to upload file to the OSS: %v", err.Error())
+		}
+	}()
 
 	utils.WriteJSONResponse(w, http.StatusOK, "success", "file uploaded successfully")
 }

@@ -58,6 +58,7 @@ var (
 	AccessKeyID     string
 	AccessKeySecret string
 	BucketName      string
+	BucketDir       = "file-store/"
 )
 
 func init() {
