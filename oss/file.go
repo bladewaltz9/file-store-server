@@ -1,7 +1,13 @@
 package oss
 
+import (
+	"time"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+)
+
 // UploadFile: upload the file to the OSS
-func UploadFile(bucketName, objectName, localFile string) error {
+func UploadFile(bucketName, objectKey, localFile string) error {
 	// Get the bucket
 	bucket, err := ossClient.Bucket(bucketName)
 	if err != nil {
@@ -9,11 +15,28 @@ func UploadFile(bucketName, objectName, localFile string) error {
 	}
 
 	// Upload the file
-	return bucket.PutObjectFromFile(objectName, localFile)
+	return bucket.PutObjectFromFile(objectKey, localFile)
+}
+
+// GenerateDownloadURL: generate the download URL for the file in the OSS
+func GenerateDownloadURL(bucketName, objectKey string, expiryTime time.Duration) (string, error) {
+	// Get the bucket
+	bucket, err := ossClient.Bucket(bucketName)
+	if err != nil {
+		return "", err
+	}
+
+	// Generate the download URL
+	signedURL, err := bucket.SignURL(objectKey, oss.HTTPGet, int64(expiryTime.Seconds()))
+	if err != nil {
+		return "", err
+	}
+
+	return signedURL, nil
 }
 
 // DownloadFile: download the file from the OSS
-func DownloadFile(bucketName, objectName, downloadPath string) error {
+func DownloadFile(bucketName, objectKey, downloadPath string) error {
 	// Get the bucket
 	bucket, err := ossClient.Bucket(bucketName)
 	if err != nil {
@@ -21,11 +44,11 @@ func DownloadFile(bucketName, objectName, downloadPath string) error {
 	}
 
 	// Download the file
-	return bucket.GetObjectToFile(objectName, downloadPath)
+	return bucket.GetObjectToFile(objectKey, downloadPath)
 }
 
 // DeleteFile: delete the file from the OSS
-func DeleteFile(bucketName, objectName string) error {
+func DeleteFile(bucketName, objectKey string) error {
 	// Get the bucket
 	bucket, err := ossClient.Bucket(bucketName)
 	if err != nil {
@@ -33,5 +56,5 @@ func DeleteFile(bucketName, objectName string) error {
 	}
 
 	// Delete the file
-	return bucket.DeleteObject(objectName)
+	return bucket.DeleteObject(objectKey)
 }

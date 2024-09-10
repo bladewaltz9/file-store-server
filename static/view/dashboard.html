@@ -188,7 +188,8 @@
                     <td>{{.FileSize}}</td>
                     <td>{{.UploadTime}}</td>
                     <td>
-                        <a href="/file/download/{{.FileID}}" class="btn-download">Download</a>
+                        <!-- <a href="/file/download/url/{{.FileID}}" class="btn-download">Download</a> -->
+                        <a class="btn-download" href="#" data-file-id="{{.FileID}}">Download</a>
                         <a href="javascript:void(0);" class="btn-delete" onclick="deleteFile('{{.FileID}}')">Delete</a>
                     </td>
 
@@ -467,6 +468,45 @@
                     });
             }
         }
+
+        // Download file
+        document.addEventListener('DOMContentLoaded', function () {
+            // 使用类选择器绑定点击事件
+            document.querySelectorAll('.btn-download').forEach(function (link) {
+                link.addEventListener('click', async function (event) {
+                    event.preventDefault(); // 防止默认的链接行为
+
+                    const fileID = event.target.getAttribute('data-file-id');
+                    try {
+                        const response = await fetch(`/file/download/url/${fileID}`);
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        const data = await response.json();
+
+                        // 请求文件的 Blob 对象
+                        const fileResponse = await fetch(data.url);
+                        if (!fileResponse.ok) {
+                            throw new Error('File fetch failed');
+                        }
+                        const blob = await fileResponse.blob();
+
+                        // 创建临时下载链接
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = data.file_name; // 从 JSON 中获取文件名
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a); // 移除临时元素
+                        window.URL.revokeObjectURL(url); // 释放 URL
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An unexpected error occurred.');
+                    }
+                });
+            });
+        });
     </script>
 </body>
 

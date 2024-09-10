@@ -112,7 +112,8 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// save the file to the OSS
 	go func() {
-		if err := oss.UploadFile(config.BucketName, config.BucketDir+fileMetas.FileName, fileMetas.FilePath); err != nil {
+		objectKey := config.BucketDir + fileMetas.FileName
+		if err := oss.UploadFile(config.BucketName, objectKey, fileMetas.FilePath); err != nil {
 			log.Printf("failed to upload file to the OSS: %v", err.Error())
 		}
 	}()
@@ -200,6 +201,56 @@ func FileDownloadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// send the file content to the client
 	http.ServeContent(w, r, fileMeta.FileName, fileMeta.UpdateAt, file)
+}
+
+func FileDownloadURLHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	fileIDStr := strings.TrimPrefix(r.URL.Path, "/file/download/url/")
+	if fileIDStr == "" {
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	// convert the file_id to int
+	fileID, err := strconv.Atoi(fileIDStr)
+	if err != nil {
+		log.Printf("failed to convert file_id to int: %v", err.Error())
+		http.Error(w, "invalid parameter", http.StatusBadRequest)
+		return
+	}
+
+	// get the file metadata
+	fileMeta, err := db.GetFileMeta(fileID)
+	if err != nil {
+		log.Printf("failed to get file metadata: %v", err.Error())
+		http.Error(w, "failed to get file metadata", http.StatusInternalServerError)
+		return
+	}
+
+	// generate the download URL
+	expiryTime := config.URLExpireTime
+	downloadURL, err := oss.GenerateDownloadURL(config.BucketName, config.BucketDir+fileMeta.FileName, expiryTime)
+	if err != nil {
+		log.Printf("failed to generate download URL: %v", err.Error())
+		http.Error(w, "failed to generate download URL", http.StatusInternalServerError)
+		return
+	}
+
+	// return the download URL
+	response := models.DownloadResponse{
+		URL:      downloadURL,
+		FileName: fileMeta.FileName,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("failed to encode the download URL: %v", err.Error())
+		http.Error(w, "failed to encode the download URL", http.StatusInternalServerError)
+	}
 }
 
 // FileUpdateHandler: handles the update request

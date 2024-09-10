@@ -15,3 +15,9 @@ type DashboardData struct {
 	Username string     `json:"username"`
 	Files    []FileInfo `json:"files"`
 }
+
+// DownloadResponse: download response structure
+type DownloadResponse struct {
+	URL      string `json:"url"`
+	FileName string `json:"file_name"`
+}

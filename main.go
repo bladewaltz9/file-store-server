@@ -13,6 +13,7 @@ func main() {
 	http.HandleFunc("/file/upload", middleware.TokenAuthMiddleware(handler.FileUploadHandler))
 	http.HandleFunc("/file/query", middleware.TokenAuthMiddleware(handler.FileQueryHandler))
 	http.HandleFunc("/file/download/", middleware.TokenAuthMiddleware(handler.FileDownloadHandler))
+	http.HandleFunc("/file/download/url/", middleware.TokenAuthMiddleware(handler.FileDownloadURLHandler))
 	http.HandleFunc("/file/update/", middleware.TokenAuthMiddleware(handler.FileUpdateHandler))
 	http.HandleFunc("/file/delete/", middleware.TokenAuthMiddleware(handler.FileDeleteHandler))
 	http.HandleFunc("/file/fastupload", middleware.TokenAuthMiddleware(handler.FileFastUploadHandler))

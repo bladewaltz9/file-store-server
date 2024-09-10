@@ -59,6 +59,7 @@ var (
 	AccessKeySecret string
 	BucketName      string
 	BucketDir       = "file-store/"
+	URLExpireTime   = time.Hour * 24 // 24 hours
 )
 
 func init() {
